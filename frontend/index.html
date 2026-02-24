@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ranvier Fullstack Reference</title>
+  <style>
+    :root {
+      --bg: #0f0f14;
+      --surface: #1a1a24;
+      --border: #2a2a3a;
+      --accent: #7c5cfc;
+      --accent-dim: #5a3fd6;
+      --text: #e4e4ec;
+      --text-dim: #8888a0;
+      --success: #34d399;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 1.5rem 2rem;
+      background: linear-gradient(135deg, var(--surface) 0%, #12121a 100%);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header .badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(124, 92, 252, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(124, 92, 252, 0.3);
+    }
+
+    main {
+      width: 100%;
+      max-width: 720px;
+      padding: 2rem;
+      flex: 1;
+    }
+
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .status-card:hover { border-color: var(--accent); }
+    .status-card h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .status-dot.error { background: #f87171; animation: none; }
+    .status-dot.loading { background: #fbbf24; animation: pulse 0.8s ease-in-out infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .notes-list {
+      list-style: none;
+    }
+    .notes-list li {
+      background: rgba(124, 92, 252, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      transition: transform 0.15s, border-color 0.2s;
+    }
+    .notes-list li:hover {
+      transform: translateX(4px);
+      border-color: var(--accent-dim);
+    }
+    .notes-list li .note-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .notes-list li .note-body {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+    }
+
+    .create-form {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .create-form input {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .create-form input:focus { border-color: var(--accent); }
+    .create-form button {
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      font-family: var(--font);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .create-form button:hover { background: var(--accent-dim); }
+
+    footer {
+      width: 100%;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="logo">Ranvier</span>
+    <span class="badge">Fullstack Reference</span>
+  </header>
+
+  <main>
+    <!-- Health Status -->
+    <div class="status-card">
+      <h2>API Status</h2>
+      <div class="status-indicator">
+        <div id="statusDot" class="status-dot loading"></div>
+        <span id="statusText">Connecting…</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="status-card">
+      <h2>Notes</h2>
+      <ul id="notesList" class="notes-list">
+        <li><span class="note-body" style="color:var(--text-dim)">Loading…</span></li>
+      </ul>
+    </div>
+
+    <!-- Create -->
+    <div class="status-card">
+      <h2>Create Note (mock)</h2>
+      <div class="create-form">
+        <input id="noteInput" type="text" placeholder="Enter a title…">
+        <button id="createBtn">Create</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Ranvier v0.10.0 — <a href="https://ranvier.studio" target="_blank">ranvier.studio</a>
+  </footer>
+
+  <script>
+    const API = '/api';
+
+    async function checkHealth() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      try {
+        const res = await fetch(`${API}/health`);
+        const data = await res.json();
+        dot.className = 'status-dot';
+        text.textContent = `Online — v${data.version}`;
+      } catch {
+        dot.className = 'status-dot error';
+        text.textContent = 'Offline — cannot reach API';
+      }
+    }
+
+    async function loadNotes() {
+      const list = document.getElementById('notesList');
+      try {
+        const res = await fetch(`${API}/notes`);
+        const notes = await res.json();
+        list.innerHTML = notes.map(n =>
+          `<li>
+             <div class="note-title">#${n.id} ${n.title}</div>
+             <div class="note-body">${n.body}</div>
+           </li>`
+        ).join('');
+      } catch {
+        list.innerHTML = '<li><span class="note-body" style="color:#f87171">Failed to load notes</span></li>';
+      }
+    }
+
+    document.getElementById('createBtn').addEventListener('click', async () => {
+      const input = document.getElementById('noteInput');
+      const title = input.value.trim();
+      if (!title) return;
+      try {
+        const res = await fetch(`${API}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, body: 'Created from the frontend' }),
+        });
+        const note = await res.json();
+        const list = document.getElementById('notesList');
+        list.innerHTML += `<li>
+          <div class="note-title">#${note.id} ${note.title}</div>
+          <div class="note-body">${note.body}</div>
+        </li>`;
+        input.value = '';
+      } catch (e) {
+        alert('Failed to create note: ' + e.message);
+      }
+    });
+
+    // Boot
+    checkHealth();
+    loadNotes();
+    setInterval(checkHealth, 10000);
+  </script>
+</body>
+</html>
