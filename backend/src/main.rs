@@ -74,7 +74,10 @@ impl DbTransition<(), Vec<Note>> for ListNotes {
     }
 }
 
-/// Parses the CreateNoteInput JSON from the bus raw body bytes.
+/// M147 ergonomics: reads `HttpRequestBody` from the Bus (injected by `.post_body()`) and
+/// parses it as JSON. Compared to v0.10.0 pre-M147, the raw bytes are now available via
+/// `bus.read::<HttpRequestBody>()` instead of a raw `Vec<u8>`, and the route is registered
+/// with `.post_body()` which injects the bytes automatically.
 #[derive(Clone, Copy)]
 struct ParseBody;
 
@@ -89,13 +92,13 @@ impl Transition<(), CreateNoteInput> for ParseBody {
         _res: &Self::Resources,
         bus: &mut Bus,
     ) -> Outcome<CreateNoteInput, Self::Error> {
-        // The HTTP layer stores the raw body bytes on the bus as Vec<u8>
-        match bus.read::<Vec<u8>>() {
-            Some(bytes) => match serde_json::from_slice::<CreateNoteInput>(bytes) {
+        // M147: HttpRequestBody is injected by .post_body() — no manual body reading needed.
+        match bus.read::<HttpRequestBody>() {
+            Some(body) => match body.parse_json::<CreateNoteInput>() {
                 Ok(payload) => Outcome::Next(payload),
-                Err(e) => Outcome::Fault(anyhow::anyhow!("invalid JSON: {}", e)),
+                Err(e) => Outcome::Fault(anyhow::anyhow!("{}", e)),
             },
-            None => Outcome::Fault(anyhow::anyhow!("missing request body")),
+            None => Outcome::Fault(anyhow::anyhow!("missing HttpRequestBody in bus")),
         }
     }
 }
@@ -231,6 +234,8 @@ async fn main() -> anyhow::Result<()> {
         .then(PgNode::new(ListNotes))
         .then(SerializeNotes);
 
+    // M147: ParseBody now uses HttpRequestBody from the Bus instead of raw Vec<u8>.
+    // Route registered with .post_body() — no manual body collection needed in transitions.
     let create = Axon::<(), (), anyhow::Error, AppResources>::new("CreateNote")
         .then(ParseBody)
         .then(PgNode::new(CreateNote))
@@ -245,7 +250,7 @@ async fn main() -> anyhow::Result<()> {
         .bind("0.0.0.0:3000")
         .get("/api/health", health)
         .get("/api/notes", list)
-        .post("/api/notes", create)
+        .post_body("/api/notes", create)
         .run(resources)
         .await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
