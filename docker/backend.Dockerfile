@@ -1,20 +1,30 @@
 # ── Builder stage ────────────────────────────────────────────
-FROM rust:1.85-slim as builder
+# Uses the official musl builder image — compiles a fully-static Linux binary
+FROM clux/muslrust:stable AS builder
 
-WORKDIR /app
-# Copy the full workspace context so path deps resolve
-COPY . .
-WORKDIR /app/backend
+WORKDIR /build
+# Copy workspace crates that backend depends on (path deps)
+COPY ranvier/core          ./ranvier/core
+COPY ranvier/runtime       ./ranvier/runtime
+COPY ranvier/http          ./ranvier/http
+COPY ranvier/macros        ./ranvier/macros
+COPY ranvier/extensions/db ./ranvier/extensions/db
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
-RUN cargo build --release
+# Copy the backend application
+COPY ranvier-fullstack-reference/backend ./backend
+
+WORKDIR /build/backend
+
+# Build a fully static musl binary
+RUN cargo build --release --target x86_64-unknown-linux-musl
 
 # ── Runtime stage ────────────────────────────────────────────
-FROM debian:bookworm-slim
+# Distroless/scratch: no shell, no OS overhead — just the binary
+FROM scratch
 
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-
-COPY --from=builder /app/backend/target/release/ranvier-fullstack-backend /usr/local/bin/server
+COPY --from=builder \
+    /build/backend/target/x86_64-unknown-linux-musl/release/ranvier-fullstack-backend \
+    /server
 
 EXPOSE 3000
-CMD ["server"]
+ENTRYPOINT ["/server"]
