@@ -1,6 +1,6 @@
 # Ranvier Fullstack Reference
 
-A production-like reference architecture demonstrating **Ranvier v0.10.0** in a real full-stack deployment topology.
+A production-like reference architecture demonstrating **Ranvier v0.18.0** in a real full-stack deployment topology.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ bash scripts/deploy-local.sh     # Linux/macOS
 ## Structure
 
 ```
-├── backend/           # Ranvier v0.10 HTTP API (Rust)
+├── backend/           # Ranvier v0.18 HTTP API (Rust)
 ├── frontend/          # Static SPA (HTML/CSS/JS)
 ├── docker/
 │   ├── compose/       # compose.dev.yml
