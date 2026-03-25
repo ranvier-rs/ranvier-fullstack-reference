@@ -8,7 +8,10 @@ COPY ranvier/core          ./ranvier/core
 COPY ranvier/runtime       ./ranvier/runtime
 COPY ranvier/http          ./ranvier/http
 COPY ranvier/macros        ./ranvier/macros
-COPY ranvier/extensions/db ./ranvier/extensions/db
+COPY ranvier/guard         ./ranvier/guard
+COPY ranvier/extensions/audit     ./ranvier/extensions/audit
+COPY ranvier/extensions/inspector ./ranvier/extensions/inspector
+COPY ranvier/std           ./ranvier/std
 
 # Copy the backend application
 COPY ranvier-fullstack-reference/backend ./backend

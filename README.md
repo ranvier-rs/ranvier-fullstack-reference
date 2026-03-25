@@ -1,6 +1,14 @@
 # Ranvier Fullstack Reference
 
-A production-like reference architecture demonstrating **Ranvier v0.18.0** in a real full-stack deployment topology.
+A production-like reference architecture demonstrating **Ranvier v0.43.0** in a real full-stack deployment topology.
+
+## v0.43 Feature Showcase
+
+- **`get_json_out`** / **`post_typed_json_out`**: Auto-serialize typed Outcome as JSON at route boundary
+- **`try_outcome!`**: Ergonomic `Result → Outcome::Fault` conversion
+- **`Bus::get_cloned()`**: Concise resource extraction
+- **`CorsGuard::permissive()`**: One-line dev CORS
+- **Typed Transitions**: Return domain structs, not `String` — serialization is infrastructure
 
 ## Architecture
 
@@ -37,10 +45,10 @@ bash scripts/deploy-local.sh     # Linux/macOS
 ## Structure
 
 ```
-├── backend/           # Ranvier v0.18 HTTP API (Rust)
+├── backend/           # Ranvier v0.43 HTTP API (Rust)
 ├── frontend/          # Static SPA (HTML/CSS/JS)
 ├── docker/
-│   ├── compose/       # compose.dev.yml
+│   ├── compose/       # compose.dev.yml, compose.prod.yml
 │   ├── backend.Dockerfile
 │   ├── frontend.Dockerfile
 │   └── nginx.conf
@@ -51,19 +59,15 @@ bash scripts/deploy-local.sh     # Linux/macOS
 
 ## Endpoints
 
-| Method | Path          | Description                |
-|--------|---------------|----------------------------|
-| GET    | `/api/health` | Health check               |
-| GET    | `/api/notes`  | List notes (mock)          |
-| POST   | `/api/notes`  | Create note (mock)         |
+| Method | Path          | Description                    |
+|--------|---------------|--------------------------------|
+| GET    | `/api/health` | Health check (typed JSON)      |
+| GET    | `/api/notes`  | List notes (PostgreSQL → JSON) |
+| POST   | `/api/notes`  | Create note (typed input/output) |
 
 ## Design Decisions
 
-- **Reverse proxy pattern** (Discussion 223 §4.1): Nginx serves the static frontend and proxies `/api` to the Ranvier backend. This aligns with the principle that `Ranvier::http()` is an **Ingress Builder**, not a web server.
+- **Reverse proxy pattern**: Nginx serves the static frontend and proxies `/api` to the Ranvier backend. `Ranvier::http()` is an **Ingress Builder**, not a web server.
 - **Separate containers**: Backend, frontend, and DB each run in their own container for clear deployment boundaries.
-- **Path dependencies**: The backend `Cargo.toml` uses `path = "../../ranvier/..."` to link directly to the local workspace crates during development.
-
-## Related Documents
-
-- [`docs/discussion/223_fullstack_sample_repo_strategy.md`](../docs/discussion/223_fullstack_sample_repo_strategy.md) — Strategy for this reference repo
-- [`docs/00_roadmap/milestone_parallel.md`](../docs/00_roadmap/milestone_parallel.md) — M141 milestone tracking
+- **Path dependencies**: The backend `Cargo.toml` uses `path = "../../ranvier/..."` for local workspace parity.
+- **Typed JSON serialization at boundary**: Transitions return domain structs (`Note`, `HealthResponse`). JSON serialization happens at the route level via `get_json_out` / `post_typed_json_out`, aligning with PHILOSOPHY.md §5 "Infrastructure as Boundary".

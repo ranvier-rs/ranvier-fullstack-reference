@@ -1,14 +1,19 @@
 /*!
-# Ranvier Fullstack Reference — Backend API
+# Ranvier Fullstack Reference — Backend API (v0.43)
 
-Demonstrates the `DbTransition` + `PgNode` + `DbResources` pattern from `ranvier-db`
-wired into a multi-route Ranvier HTTP ingress.
+Demonstrates a production-like Notes CRUD API built with Ranvier v0.43 features:
+
+- **`get_json_out`**: Auto-serialize typed Outcome as JSON at route boundary
+- **`post_typed_json_out`**: Typed JSON input + typed JSON output (JsonSchema)
+- **`try_outcome!`**: Ergonomic `Result → Outcome::Fault` conversion
+- **`Bus::get_cloned()`**: Concise resource extraction from Bus
+- **`CorsGuard::permissive()`**: One-line dev CORS
 
 ## Endpoints
 
-- `GET  /api/health` — Health check
-- `GET  /api/notes`  — List all notes (PostgreSQL)
-- `POST /api/notes`  — Create a note (PostgreSQL)
+- `GET  /api/health` — Health check (typed JSON response)
+- `GET  /api/notes`  — List all notes (PostgreSQL → typed JSON)
+- `POST /api/notes`  — Create a note (typed JSON input → typed JSON output)
 
 ## Running
 
@@ -18,13 +23,11 @@ DATABASE_URL=postgres://ranvier:ranvierpass@localhost:5432/ranvier_db cargo run
 */
 
 use async_trait::async_trait;
-use ranvier_core::{prelude::*, transition::ResourceRequirement};
-use ranvier_db::{
-    node::{DbResources, DbTransition, PgNode, QueryResult},
-    prelude::{DbError, PostgresPool},
-};
+use ranvier_core::{prelude::*, try_outcome};
+use ranvier_guard::prelude::*;
 use ranvier_http::prelude::*;
 use ranvier_runtime::Axon;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 // ─── Models ────────────────────────────────────────────────────
@@ -36,70 +39,63 @@ pub struct Note {
     pub body: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CreateNoteInput {
     pub title: String,
     pub body: String,
 }
 
-// ─── Resources ─────────────────────────────────────────────────
-
-#[derive(Clone)]
-struct AppResources {
-    pool: PostgresPool,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthResponse {
+    pub status: String,
+    pub version: String,
 }
 
-impl ResourceRequirement for AppResources {}
+// ─── Transitions ──────────────────────────────────────────────
 
-impl DbResources for AppResources {
-    fn pg_pool(&self) -> &sqlx::PgPool {
-        self.pool.inner()
+#[derive(Clone, Copy)]
+struct HealthCheck;
+
+#[async_trait]
+impl Transition<(), HealthResponse> for HealthCheck {
+    type Error = String;
+    type Resources = ();
+
+    async fn run(
+        &self,
+        _input: (),
+        _res: &Self::Resources,
+        _bus: &mut Bus,
+    ) -> Outcome<HealthResponse, Self::Error> {
+        Outcome::Next(HealthResponse {
+            status: "ok".into(),
+            version: "0.43.0".into(),
+        })
     }
 }
-
-// ─── DB Transitions ────────────────────────────────────────────
 
 #[derive(Clone, Copy)]
 struct ListNotes;
 
 #[async_trait]
-impl DbTransition<(), Vec<Note>> for ListNotes {
-    type Error = anyhow::Error;
-
-    async fn run(&self, _input: (), pool: &sqlx::PgPool) -> QueryResult<Vec<Note>> {
-        sqlx::query_as::<_, Note>("SELECT id, title, body FROM notes ORDER BY id")
-            .fetch_all(pool)
-            .await
-            .map_err(|e| DbError::QueryFailed(e.to_string()))
-    }
-}
-
-/// M147 ergonomics: reads `HttpRequestBody` from the Bus (injected by `.post_body()`) and
-/// parses it as JSON. Compared to v0.10.0 pre-M147, the raw bytes are now available via
-/// `bus.read::<HttpRequestBody>()` instead of a raw `Vec<u8>`, and the route is registered
-/// with `.post_body()` which injects the bytes automatically.
-#[derive(Clone, Copy)]
-struct ParseBody;
-
-#[async_trait]
-impl Transition<(), CreateNoteInput> for ParseBody {
-    type Error = anyhow::Error;
-    type Resources = AppResources;
+impl Transition<(), Vec<Note>> for ListNotes {
+    type Error = String;
+    type Resources = ();
 
     async fn run(
         &self,
-        _state: (),
+        _input: (),
         _res: &Self::Resources,
         bus: &mut Bus,
-    ) -> Outcome<CreateNoteInput, Self::Error> {
-        // M147: HttpRequestBody is injected by .post_body() — no manual body reading needed.
-        match bus.read::<HttpRequestBody>() {
-            Some(body) => match body.parse_json::<CreateNoteInput>() {
-                Ok(payload) => Outcome::Next(payload),
-                Err(e) => Outcome::Fault(anyhow::anyhow!("{}", e)),
-            },
-            None => Outcome::Fault(anyhow::anyhow!("missing HttpRequestBody in bus")),
-        }
+    ) -> Outcome<Vec<Note>, Self::Error> {
+        let pool = try_outcome!(bus.get_cloned::<sqlx::PgPool>(), "PgPool not in Bus");
+        let notes = try_outcome!(
+            sqlx::query_as::<_, Note>("SELECT id, title, body FROM notes ORDER BY id")
+                .fetch_all(&pool)
+                .await
+                .map_err(|e| e.to_string())
+        );
+        Outcome::Next(notes)
     }
 }
 
@@ -107,91 +103,44 @@ impl Transition<(), CreateNoteInput> for ParseBody {
 struct CreateNote;
 
 #[async_trait]
-impl DbTransition<CreateNoteInput, Note> for CreateNote {
-    type Error = anyhow::Error;
-
-    async fn run(&self, input: CreateNoteInput, pool: &sqlx::PgPool) -> QueryResult<Note> {
-        sqlx::query_as::<_, Note>(
-            "INSERT INTO notes (title, body) VALUES ($1, $2) RETURNING id, title, body",
-        )
-        .bind(&input.title)
-        .bind(&input.body)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| DbError::QueryFailed(e.to_string()))
-    }
-}
-
-// ─── Plain HTTP Transitions (for JSON serialization layer) ─────
-
-#[derive(Clone, Copy)]
-struct SerializeNotes;
-
-#[async_trait]
-impl Transition<Vec<Note>, String> for SerializeNotes {
-    type Error = anyhow::Error;
-    type Resources = AppResources;
+impl Transition<CreateNoteInput, Note> for CreateNote {
+    type Error = String;
+    type Resources = ();
 
     async fn run(
         &self,
-        notes: Vec<Note>,
+        input: CreateNoteInput,
         _res: &Self::Resources,
-        _bus: &mut Bus,
-    ) -> Outcome<String, Self::Error> {
-        match serde_json::to_string(&notes) {
-            Ok(json) => Outcome::Next(json),
-            Err(e) => Outcome::Fault(e.into()),
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-struct SerializeNote;
-
-#[async_trait]
-impl Transition<Note, String> for SerializeNote {
-    type Error = anyhow::Error;
-    type Resources = AppResources;
-
-    async fn run(
-        &self,
-        note: Note,
-        _res: &Self::Resources,
-        _bus: &mut Bus,
-    ) -> Outcome<String, Self::Error> {
-        match serde_json::to_string(&note) {
-            Ok(json) => Outcome::Next(json),
-            Err(e) => Outcome::Fault(e.into()),
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-struct HealthCheck;
-
-#[async_trait]
-impl Transition<(), String> for HealthCheck {
-    type Error = anyhow::Error;
-    type Resources = AppResources;
-
-    async fn run(
-        &self,
-        _state: (),
-        _res: &Self::Resources,
-        _bus: &mut Bus,
-    ) -> Outcome<String, Self::Error> {
-        Outcome::Next(r#"{"status":"ok","version":"0.10.0"}"#.to_string())
+        bus: &mut Bus,
+    ) -> Outcome<Note, Self::Error> {
+        let pool = try_outcome!(bus.get_cloned::<sqlx::PgPool>(), "PgPool not in Bus");
+        let note = try_outcome!(
+            sqlx::query_as::<_, Note>(
+                "INSERT INTO notes (title, body) VALUES ($1, $2) RETURNING id, title, body",
+            )
+            .bind(&input.title)
+            .bind(&input.body)
+            .fetch_one(&pool)
+            .await
+            .map_err(|e| e.to_string())
+        );
+        Outcome::Next(note)
     }
 }
 
 // ─── Main ──────────────────────────────────────────────────────
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "info".into()),
+        )
+        .init();
 
     let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://ranvier:ranvierpass@localhost:5432/ranvier_db".to_string());
+        .unwrap_or_else(|_| "postgres://ranvier:ranvierpass@localhost:5432/ranvier_db".into());
 
     tracing::info!("Connecting to DB: {}", database_url);
 
@@ -199,13 +148,13 @@ async fn main() -> anyhow::Result<()> {
     let pool = {
         let mut result = None;
         for i in 1..=10 {
-            match PostgresPool::new(&database_url).await {
+            match sqlx::PgPool::connect(&database_url).await {
                 Ok(p) => {
                     result = Some(p);
                     break;
                 }
                 Err(e) => {
-                    tracing::warn!("DB attempt {}: {}. Retrying in 2s…", i, e);
+                    tracing::warn!("DB attempt {i}: {e}. Retrying in 2s…");
                     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 }
             }
@@ -221,39 +170,35 @@ async fn main() -> anyhow::Result<()> {
             body  TEXT    NOT NULL
         )",
     )
-    .execute(pool.inner())
+    .execute(&pool)
     .await?;
 
-    let resources = AppResources { pool };
+    // Build circuits — typed Outcome, no manual JSON serialization
+    let health = Axon::simple::<String>("health").then(HealthCheck);
 
-    // Build circuits
-    let health = Axon::<(), (), anyhow::Error, AppResources>::new("HealthCheck")
-        .then(HealthCheck);
+    let list = Axon::simple::<String>("list-notes").then(ListNotes);
 
-    let list = Axon::<(), (), anyhow::Error, AppResources>::new("ListNotes")
-        .then(PgNode::new(ListNotes))
-        .then(SerializeNotes);
-
-    // M147: ParseBody now uses HttpRequestBody from the Bus instead of raw Vec<u8>.
-    // Route registered with .post_body() — no manual body collection needed in transitions.
-    let create = Axon::<(), (), anyhow::Error, AppResources>::new("CreateNote")
-        .then(ParseBody)
-        .then(PgNode::new(CreateNote))
-        .then(SerializeNote);
+    let create = Axon::typed::<CreateNoteInput, String>("create-note").then(CreateNote);
 
     println!("╔═══════════════════════════════════════════════╗");
     println!("║  Ranvier Fullstack Reference — Backend API    ║");
-    println!("║  Listening on http://0.0.0.0:3000             ║");
+    println!("║  v0.43 · http://0.0.0.0:3000                 ║");
     println!("╚═══════════════════════════════════════════════╝");
 
     Ranvier::http()
         .bind("0.0.0.0:3000")
-        .get("/api/health", health)
-        .get("/api/notes", list)
-        .post_body("/api/notes", create)
-        .run(resources)
+        .bus_injector({
+            let pool = pool.clone();
+            move |_parts, bus| {
+                bus.insert(pool.clone());
+            }
+        })
+        .guard(AccessLogGuard::<()>::new())
+        .guard(CorsGuard::<()>::permissive())
+        // Routes: typed JSON auto-serialization at the HTTP boundary
+        .get_json_out("/api/health", health)
+        .get_json_out("/api/notes", list)
+        .post_typed_json_out("/api/notes", create)
+        .run(())
         .await
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
-
-    Ok(())
 }
