@@ -1,10 +1,11 @@
 [package]
 name = "ranvier-fullstack-backend"
-version = "0.43.0"
+version = "0.51.0"
 edition = "2024"
+rust-version = "1.93.0"
 
 [dependencies]
-# Ranvier v0.43 (local path deps for workspace parity)
+# Ranvier local path deps for workspace parity
 ranvier-core    = { path = "../../ranvier/core" }
 ranvier-runtime = { path = "../../ranvier/runtime" }
 ranvier-http    = { path = "../../ranvier/http" }

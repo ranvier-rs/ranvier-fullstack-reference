@@ -1,8 +1,8 @@
 # Ranvier Fullstack Reference
 
-A production-like reference architecture demonstrating **Ranvier v0.43.0** in a real full-stack deployment topology.
+A production-like reference architecture demonstrating **Ranvier v0.51.0** in a real full-stack deployment topology.
 
-## v0.43 Feature Showcase
+## Feature Showcase
 
 - **`get_json_out`** / **`post_typed_json_out`**: Auto-serialize typed Outcome as JSON at route boundary
 - **`try_outcome!`**: Ergonomic `Result → Outcome::Fault` conversion
@@ -45,7 +45,7 @@ bash scripts/deploy-local.sh     # Linux/macOS
 ## Structure
 
 ```
-├── backend/           # Ranvier v0.43 HTTP API (Rust)
+├── backend/           # Ranvier HTTP API (Rust)
 ├── frontend/          # Static SPA (HTML/CSS/JS)
 ├── docker/
 │   ├── compose/       # compose.dev.yml, compose.prod.yml

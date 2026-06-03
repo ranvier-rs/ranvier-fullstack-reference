@@ -1,7 +1,7 @@
 /*!
-# Ranvier Fullstack Reference — Backend API (v0.43)
+# Ranvier Fullstack Reference — Backend API (v0.51)
 
-Demonstrates a production-like Notes CRUD API built with Ranvier v0.43 features:
+Demonstrates a production-like Notes CRUD API built with current Ranvier features:
 
 - **`get_json_out`**: Auto-serialize typed Outcome as JSON at route boundary
 - **`post_typed_json_out`**: Typed JSON input + typed JSON output (JsonSchema)
@@ -69,7 +69,7 @@ impl Transition<(), HealthResponse> for HealthCheck {
     ) -> Outcome<HealthResponse, Self::Error> {
         Outcome::Next(HealthResponse {
             status: "ok".into(),
-            version: "0.43.0".into(),
+            version: "0.51.0".into(),
         })
     }
 }
@@ -134,15 +134,14 @@ impl Transition<CreateNoteInput, Note> for CreateNote {
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgres://ranvier:ranvierpass@localhost:5432/ranvier_db".into());
 
-    tracing::info!("Connecting to DB: {}", database_url);
+    tracing::info!("Connecting to configured PostgreSQL database");
 
     // Retry loop handles container startup race condition
     let pool = {
@@ -159,7 +158,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
         }
-        result.expect("Failed to connect to database after 10 attempts")
+        result.ok_or_else(|| {
+            std::io::Error::other("failed to connect to database after 10 attempts")
+        })?
     };
 
     // Bootstrap schema (idempotent)
@@ -182,7 +183,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     println!("╔═══════════════════════════════════════════════╗");
     println!("║  Ranvier Fullstack Reference — Backend API    ║");
-    println!("║  v0.43 · http://0.0.0.0:3000                 ║");
+    println!("║  v0.51 · http://0.0.0.0:3000                 ║");
     println!("╚═══════════════════════════════════════════════╝");
 
     Ranvier::http()
