@@ -10,6 +10,7 @@ const valueAfter = (flag, fallback) => {
 const baseUrl = valueAfter('--base-url', 'http://127.0.0.1:3000').replace(/\/$/, '');
 const prefix = valueAfter('--prefix', 'm420-rq4');
 const output = valueAfter('--output', '');
+const adapter = valueAfter('--adapter', 'native');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -44,6 +45,11 @@ async function authorize(input) {
 
 const health = await jsonFetch('/api/health');
 assert(health.status === 200, 'health must return 200');
+assert(['native', 'hybrid'].includes(adapter), 'adapter must be native or hybrid');
+assert(
+  health.body.service === `order-authorization-${adapter}`,
+  `health reported ${health.body.service}; expected ${adapter}`,
+);
 
 const observations = {};
 observations.s1 = await authorize(request('s1'));
@@ -93,6 +99,7 @@ assert(traces.length > 0, 'domain traces must be visible');
 
 const report = {
   schema_version: '1.0.0',
+  adapter,
   base_url: baseUrl,
   prefix,
   health: health.body,
@@ -101,6 +108,7 @@ const report = {
     decisions,
     audits,
     side_effect_events: effects,
+    trace_events: traces,
     trace_event_count: traces.length,
   },
   result: 'pass',

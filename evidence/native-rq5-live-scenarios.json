@@ -1,0 +1,1169 @@
+{
+  "schema_version": "1.0.0",
+  "adapter": "native",
+  "base_url": "http://127.0.0.1:43040",
+  "prefix": "m420-rq5-final-native",
+  "health": {
+    "ranvier_candidate": "0.51.0-m420.1",
+    "service": "order-authorization-native",
+    "status": "ok"
+  },
+  "scenarios": {
+    "s1": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq5-final-native-s1",
+          "reservation_id": "res-cdb83d57996c8c86",
+          "payment_authorization_id": "pay-cdb83d57996c8c86",
+          "decision_id": "dec-2945e41c27114ff4"
+        }
+      }
+    },
+    "s2": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "manual_review",
+          "order_id": "m420-rq5-final-native-s2",
+          "reason_codes": [
+            "risk_review_required"
+          ]
+        }
+      }
+    },
+    "s3": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "rejected",
+          "order_id": "m420-rq5-final-native-s3",
+          "reason_codes": [
+            "policy_rejected"
+          ]
+        }
+      }
+    },
+    "s4": {
+      "status": 422,
+      "body": {
+        "status": "fault",
+        "fault": {
+          "code": "inventory_out_of_stock",
+          "failed_step": "ReserveInventory",
+          "message": "inventory could not satisfy the requested quantity",
+          "order_id": "m420-rq5-final-native-s4",
+          "idempotency_key": "m420-rq5-final-native-s4",
+          "retryable": false,
+          "operator_action_required": false,
+          "compensations": []
+        }
+      }
+    },
+    "s5": {
+      "status": 422,
+      "body": {
+        "status": "fault",
+        "fault": {
+          "code": "payment_declined",
+          "failed_step": "AuthorizePayment",
+          "message": "payment authorization was declined",
+          "order_id": "m420-rq5-final-native-s5",
+          "idempotency_key": "m420-rq5-final-native-s5",
+          "retryable": false,
+          "operator_action_required": false,
+          "compensations": [
+            {
+              "action": "release_inventory",
+              "resource_id": "res-c6db9970d8c04113",
+              "status": "applied"
+            }
+          ]
+        }
+      }
+    },
+    "s6": {
+      "status": 503,
+      "body": {
+        "status": "fault",
+        "fault": {
+          "code": "decision_write_failed",
+          "failed_step": "RecordDecision",
+          "message": "decision and audit were not committed",
+          "order_id": "m420-rq5-final-native-s6",
+          "idempotency_key": "m420-rq5-final-native-s6",
+          "retryable": true,
+          "operator_action_required": false,
+          "compensations": [
+            {
+              "action": "void_payment",
+              "resource_id": "pay-a4488e81cb19944b",
+              "status": "applied"
+            },
+            {
+              "action": "release_inventory",
+              "resource_id": "res-a4488e81cb19944b",
+              "status": "applied"
+            }
+          ]
+        }
+      }
+    },
+    "s7_first": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq5-final-native-s7",
+          "reservation_id": "res-1cfd8ec94d7f909d",
+          "payment_authorization_id": "pay-1cfd8ec94d7f909d",
+          "decision_id": "dec-0f6bfccaa9d03660"
+        }
+      }
+    },
+    "s7_retry": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq5-final-native-s7",
+          "reservation_id": "res-1cfd8ec94d7f909d",
+          "payment_authorization_id": "pay-1cfd8ec94d7f909d",
+          "decision_id": "dec-0f6bfccaa9d03660"
+        }
+      }
+    },
+    "s8": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq5-final-native-s8",
+          "reservation_id": "res-921107b84b75fe16",
+          "payment_authorization_id": "pay-921107b84b75fe16",
+          "decision_id": "dec-9bdf9bcefd23e731"
+        }
+      }
+    }
+  },
+  "evidence": {
+    "decisions": [
+      {
+        "decision_id": "dec-2945e41c27114ff4",
+        "order_id": "m420-rq5-final-native-s1",
+        "idempotency_key": "m420-rq5-final-native-s1",
+        "request_digest": "70d6ad35befa365455af8d30db4ed08d77a0f8418163db8ca29f0a837c52d917",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq5-final-native-s1",
+          "reservation_id": "res-cdb83d57996c8c86",
+          "payment_authorization_id": "pay-cdb83d57996c8c86",
+          "decision_id": "dec-2945e41c27114ff4"
+        }
+      },
+      {
+        "decision_id": "dec-f05619d1db0a6839",
+        "order_id": "m420-rq5-final-native-s2",
+        "idempotency_key": "m420-rq5-final-native-s2",
+        "request_digest": "07be329481dcaf96ed154a23102406907f310b96c8ebe192a57bf14be4b59447",
+        "result": {
+          "outcome": "manual_review",
+          "order_id": "m420-rq5-final-native-s2",
+          "reason_codes": [
+            "risk_review_required"
+          ]
+        }
+      },
+      {
+        "decision_id": "dec-c53bcf1b239bb07a",
+        "order_id": "m420-rq5-final-native-s3",
+        "idempotency_key": "m420-rq5-final-native-s3",
+        "request_digest": "aa46bbd57a3f4ce9b519f97695c5bf0f3db42333a331fc1c830aa36bf76322d5",
+        "result": {
+          "outcome": "rejected",
+          "order_id": "m420-rq5-final-native-s3",
+          "reason_codes": [
+            "policy_rejected"
+          ]
+        }
+      },
+      {
+        "decision_id": "dec-0f6bfccaa9d03660",
+        "order_id": "m420-rq5-final-native-s7",
+        "idempotency_key": "m420-rq5-final-native-s7",
+        "request_digest": "2653b3d4ff9da05c13494ecadb9feb99d53c476ef8f7879cbb6676e4a7158e85",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq5-final-native-s7",
+          "reservation_id": "res-1cfd8ec94d7f909d",
+          "payment_authorization_id": "pay-1cfd8ec94d7f909d",
+          "decision_id": "dec-0f6bfccaa9d03660"
+        }
+      },
+      {
+        "decision_id": "dec-9bdf9bcefd23e731",
+        "order_id": "m420-rq5-final-native-s8",
+        "idempotency_key": "m420-rq5-final-native-s8",
+        "request_digest": "c660964fa159f5b710afc2822dcf7cb9cac4a7694ef6f6d979fdcb28292c8737",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq5-final-native-s8",
+          "reservation_id": "res-921107b84b75fe16",
+          "payment_authorization_id": "pay-921107b84b75fe16",
+          "decision_id": "dec-9bdf9bcefd23e731"
+        }
+      }
+    ],
+    "audits": [
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-2945e41c27114ff4",
+        "order_id": "m420-rq5-final-native-s1",
+        "idempotency_key": "m420-rq5-final-native-s1",
+        "request_digest": "70d6ad35befa365455af8d30db4ed08d77a0f8418163db8ca29f0a837c52d917",
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-f05619d1db0a6839",
+        "order_id": "m420-rq5-final-native-s2",
+        "idempotency_key": "m420-rq5-final-native-s2",
+        "request_digest": "07be329481dcaf96ed154a23102406907f310b96c8ebe192a57bf14be4b59447",
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "terminal_outcome": "manual_review",
+        "reason_codes": [
+          "risk_review_required"
+        ]
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-c53bcf1b239bb07a",
+        "order_id": "m420-rq5-final-native-s3",
+        "idempotency_key": "m420-rq5-final-native-s3",
+        "request_digest": "aa46bbd57a3f4ce9b519f97695c5bf0f3db42333a331fc1c830aa36bf76322d5",
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "terminal_outcome": "rejected",
+        "reason_codes": [
+          "policy_rejected"
+        ]
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-0f6bfccaa9d03660",
+        "order_id": "m420-rq5-final-native-s7",
+        "idempotency_key": "m420-rq5-final-native-s7",
+        "request_digest": "2653b3d4ff9da05c13494ecadb9feb99d53c476ef8f7879cbb6676e4a7158e85",
+        "correlation_id": "cor-bb60cf6247212d57",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-9bdf9bcefd23e731",
+        "order_id": "m420-rq5-final-native-s8",
+        "idempotency_key": "m420-rq5-final-native-s8",
+        "request_digest": "c660964fa159f5b710afc2822dcf7cb9cac4a7694ef6f6d979fdcb28292c8737",
+        "correlation_id": "cor-a1b024b28019ec44",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      }
+    ],
+    "side_effect_events": [
+      {
+        "sequence": 8,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq5-final-native-s1",
+        "resource_id": "res-cdb83d57996c8c86",
+        "status": "applied"
+      },
+      {
+        "sequence": 11,
+        "action": "payment_authorized",
+        "order_id": "m420-rq5-final-native-s1",
+        "resource_id": "pay-cdb83d57996c8c86",
+        "status": "applied"
+      },
+      {
+        "sequence": 60,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq5-final-native-s5",
+        "resource_id": "res-c6db9970d8c04113",
+        "status": "applied"
+      },
+      {
+        "sequence": 63,
+        "action": "inventory_released",
+        "order_id": "m420-rq5-final-native-s5",
+        "resource_id": "res-c6db9970d8c04113",
+        "status": "applied"
+      },
+      {
+        "sequence": 72,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq5-final-native-s6",
+        "resource_id": "res-a4488e81cb19944b",
+        "status": "applied"
+      },
+      {
+        "sequence": 75,
+        "action": "payment_authorized",
+        "order_id": "m420-rq5-final-native-s6",
+        "resource_id": "pay-a4488e81cb19944b",
+        "status": "applied"
+      },
+      {
+        "sequence": 78,
+        "action": "payment_voided",
+        "order_id": "m420-rq5-final-native-s6",
+        "resource_id": "pay-a4488e81cb19944b",
+        "status": "applied"
+      },
+      {
+        "sequence": 79,
+        "action": "inventory_released",
+        "order_id": "m420-rq5-final-native-s6",
+        "resource_id": "res-a4488e81cb19944b",
+        "status": "applied"
+      },
+      {
+        "sequence": 88,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq5-final-native-s7",
+        "resource_id": "res-1cfd8ec94d7f909d",
+        "status": "applied"
+      },
+      {
+        "sequence": 91,
+        "action": "payment_authorized",
+        "order_id": "m420-rq5-final-native-s7",
+        "resource_id": "pay-1cfd8ec94d7f909d",
+        "status": "applied"
+      },
+      {
+        "sequence": 118,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq5-final-native-s8",
+        "resource_id": "res-921107b84b75fe16",
+        "status": "applied"
+      },
+      {
+        "sequence": 121,
+        "action": "payment_authorized",
+        "order_id": "m420-rq5-final-native-s8",
+        "resource_id": "pay-921107b84b75fe16",
+        "status": "applied"
+      }
+    ],
+    "trace_events": [
+      {
+        "sequence": 1,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 2,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 3,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 4,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 5,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 6,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 7,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 9,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 10,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 12,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "sequence": 13,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "sequence": 14,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "sequence": 15,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "sequence": 16,
+        "correlation_id": "cor-b244ad1d92aa8000",
+        "order_id": "m420-rq5-final-native-s1",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "sequence": 17,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 18,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 19,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 20,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 21,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 22,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 23,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 24,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 25,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 26,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "sequence": 27,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "sequence": 28,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "sequence": 29,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "sequence": 30,
+        "correlation_id": "cor-6a32fb3253b3f7ff",
+        "order_id": "m420-rq5-final-native-s2",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "sequence": 31,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 32,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 33,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 34,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 35,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 36,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 37,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 38,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 39,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 40,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "sequence": 41,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "sequence": 42,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "sequence": 43,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "sequence": 44,
+        "correlation_id": "cor-2191b1998c7d1ad7",
+        "order_id": "m420-rq5-final-native-s3",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "sequence": 45,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 46,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 47,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 48,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 49,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 50,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 51,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 52,
+        "correlation_id": "cor-0bccf467ac321a46",
+        "order_id": "m420-rq5-final-native-s4",
+        "step": "ReserveInventory",
+        "state": "fault"
+      },
+      {
+        "sequence": 53,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 54,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 55,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 56,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 57,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 58,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 59,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 61,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 62,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 64,
+        "correlation_id": "cor-24cd30cc1f403561",
+        "order_id": "m420-rq5-final-native-s5",
+        "step": "AuthorizePayment",
+        "state": "fault"
+      },
+      {
+        "sequence": 65,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 66,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 67,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 68,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 69,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 70,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 71,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 73,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 74,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 76,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "sequence": 77,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "sequence": 80,
+        "correlation_id": "cor-6a62fa3a7f893e78",
+        "order_id": "m420-rq5-final-native-s6",
+        "step": "RecordDecision",
+        "state": "fault"
+      },
+      {
+        "sequence": 81,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 82,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 83,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 84,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 85,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 86,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 87,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 89,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 90,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 92,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "sequence": 93,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "sequence": 94,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "sequence": 95,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "sequence": 96,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "sequence": 97,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 98,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 99,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 100,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 101,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 102,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 103,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 104,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 105,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 106,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "sequence": 107,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "sequence": 108,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "sequence": 109,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "sequence": 110,
+        "correlation_id": "cor-bb60cf6247212d57",
+        "order_id": "m420-rq5-final-native-s7",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "sequence": 111,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "sequence": 112,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "sequence": 113,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "sequence": 114,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "sequence": 115,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "sequence": 116,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "sequence": 117,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "sequence": 119,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "sequence": 120,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "sequence": 122,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "sequence": 123,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "sequence": 124,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "sequence": 125,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "sequence": 126,
+        "correlation_id": "cor-a1b024b28019ec44",
+        "order_id": "m420-rq5-final-native-s8",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      }
+    ],
+    "trace_event_count": 114
+  },
+  "result": "pass"
+}

@@ -20,13 +20,19 @@ RUN set -eu; \
     wait "$index_pid" "$crates_pid" || true; \
     trap - EXIT
 
-FROM docker.io/library/debian:bookworm-slim@sha256:63a496b5d3b99214b39f5ed70eb71a61e590a77979c79cbee4faf991f8c0783e
+FROM docker.io/library/debian:bookworm-slim@sha256:63a496b5d3b99214b39f5ed70eb71a61e590a77979c79cbee4faf991f8c0783e AS runtime-base
 
 WORKDIR /app
-COPY --from=builder /build/backend/target/release/ranvier-fullstack-backend /app/server
 COPY backend/ranvier.toml /app/ranvier.toml
 
 USER 65532:65532
 EXPOSE 3000
 ENV RANVIER_CONFIG=/app/ranvier.toml
 ENTRYPOINT ["/app/server"]
+
+FROM runtime-base AS hybrid
+COPY --from=builder /build/backend/target/release/hybrid /app/server
+
+# Compose and an unspecified build target continue to publish the native path.
+FROM runtime-base AS native
+COPY --from=builder /build/backend/target/release/ranvier-fullstack-backend /app/server

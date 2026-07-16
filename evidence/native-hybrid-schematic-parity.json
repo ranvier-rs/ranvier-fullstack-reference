@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "native": {
+    "path": "evidence/native-rq5-order-authorization-schematic.json",
+    "raw_sha256": "7d445f97fef4c17bf6799b8c9f49cf43b70ea40cc1c52e3820d40dcd7561a899",
+    "structural_sha256": "be3198e196056f71af6a2d19b4550d470fc3c0a1f204acffc2788e875f099eb9",
+    "node_labels": [
+      "order-authorization",
+      "ValidateRequest",
+      "ResolveIdempotency",
+      "ScreenPolicy",
+      "ReserveInventory",
+      "AuthorizePayment",
+      "RecordDecision",
+      "CompleteAuthorization"
+    ],
+    "edge_count": 7
+  },
+  "hybrid": {
+    "path": "evidence/hybrid-order-authorization-schematic.json",
+    "raw_sha256": "7238476d7108f659e9e9d6f3732eb52bd1f6d6701fa77f63306834f30903633f",
+    "structural_sha256": "be3198e196056f71af6a2d19b4550d470fc3c0a1f204acffc2788e875f099eb9",
+    "node_labels": [
+      "order-authorization",
+      "ValidateRequest",
+      "ResolveIdempotency",
+      "ScreenPolicy",
+      "ReserveInventory",
+      "AuthorizePayment",
+      "RecordDecision",
+      "CompleteAuthorization"
+    ],
+    "edge_count": 7
+  },
+  "result": "pass"
+}

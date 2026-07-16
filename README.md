@@ -1,10 +1,11 @@
 # Ranvier Fullstack Order-Authorization Reference
 
 This repository demonstrates the M420 canonical business workflow using the
-exact Ranvier `0.51.0-m420.1` local candidate. The native adapter owns HTTP
-routing and managed lifecycle; the application-owned Axon owns validation,
-policy, idempotency, inventory/payment effects, compensation, and durable
-decision/audit behavior.
+exact Ranvier `0.51.0-m420.1` local candidate. The native adapter lets Ranvier
+HTTP own routing and managed lifecycle. The hybrid adapter uses exact Axum
+`0.8.9` and Tower `0.5.3` for routing, bounded middleware, and lifecycle. Both
+delegate to one application-owned Axon for validation, policy, idempotency,
+inventory/payment effects, compensation, and durable decision/audit behavior.
 
 This remains maintainer-owned dogfood. It is not crates.io publication or an
 independently owned adoption result.
@@ -39,6 +40,10 @@ compensation is prohibited.
 - `backend/ranvier.toml` selects the typed production profile, JSON logging,
   disabled Inspector, and a 30-second managed drain deadline.
 - PostgreSQL atomically stores the terminal decision and redacted audit event.
+- `backend/src/http_contract.rs` is the single status/envelope mapping used by
+  native and hybrid paths; adapter code cannot redefine domain policy.
+- The hybrid path caps request bodies at 64 KiB, bounds concurrent requests at
+  256, and enforces the same configured shutdown deadline as the native path.
 - The runtime image is pinned, non-root, and contains the production config.
 - Production Compose requires externally supplied PostgreSQL credentials and a
   complete `DATABASE_URL`; no production password default is committed.
@@ -53,12 +58,17 @@ Prerequisites are Node 24 and Rust 1.95 (the crate MSRV remains Rust 1.93).
 node scripts/candidate-cargo.mjs check --manifest-path backend/Cargo.toml --locked
 node scripts/candidate-cargo.mjs test --manifest-path backend/Cargo.toml --locked
 node scripts/candidate-cargo.mjs clippy --manifest-path backend/Cargo.toml --locked --all-targets -- -D warnings
-node scripts/candidate-cargo.mjs run --manifest-path backend/Cargo.toml --locked -- --schematic --output evidence/native-schematic.json
+node scripts/candidate-cargo.mjs run --manifest-path backend/Cargo.toml --locked --bin ranvier-fullstack-backend -- --schematic --output evidence/native-rq5-order-authorization-schematic.json
+node scripts/candidate-cargo.mjs run --manifest-path backend/Cargo.toml --locked --bin hybrid -- --schematic --output evidence/hybrid-order-authorization-schematic.json
+node scripts/compare-adapter-schematics.mjs
+node scripts/compare-adapter-live-evidence.mjs
 ```
 
 The twelve native HTTP tests exercise S1-S8 through Ranvier's in-process HTTP/1
 boundary, plus invalid input, production startup policy, Schematic structure,
-and structured graceful shutdown.
+and structured graceful shutdown. Three hybrid tests compare every S1-S8
+response and complete redacted evidence snapshot against native behavior,
+verify a stable malformed-JSON fault, and exercise bounded Axum shutdown.
 
 ## Run
 
@@ -84,6 +94,18 @@ curl -sS http://localhost:8080/api/order-authorizations \
   }'
 ```
 
+Run the Axum/Tower hybrid against the same production policy and PostgreSQL
+contract (use a different port if native is already running):
+
+```bash
+export DATABASE_URL='postgres://ranvier:secret@127.0.0.1:5432/ranvier'
+export RANVIER_SERVER_PORT=3001
+node scripts/candidate-cargo.mjs run --manifest-path backend/Cargo.toml --locked --bin hybrid
+```
+
+The backend container defaults to the native target. Build the same pinned,
+non-root runtime with `--target hybrid` to publish the hybrid binary.
+
 Changing only the fixture selects the deterministic scenarios:
 
 | Scenario | Fixture | Expected public behavior |
@@ -101,7 +123,7 @@ Changing only the fixture selects the deterministic scenarios:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/health` | candidate and native-adapter health |
+| `GET` | `/api/health` | candidate and selected-adapter health |
 | `POST` | `/api/order-authorizations` | typed terminal result or structured fault |
 | `GET` | `/api/order-authorizations/evidence` | redacted decisions, audit, effects, and domain trace |
 
@@ -113,9 +135,11 @@ is used only to compute the request digest; it is not persisted in evidence.
 
 ```text
 backend/src/domain.rs  shared application workflow and deterministic effect ledger
+backend/src/http_contract.rs  shared terminal envelope and status mapping
 backend/src/store.rs   in-memory test and atomic PostgreSQL decision stores
 backend/src/native.rs  native Ranvier HTTP and managed lifecycle adapter
-backend/tests/         public-boundary S1-S8 and operations tests
+backend/src/hybrid.rs  Axum/Tower routes, middleware, and bounded lifecycle
+backend/tests/         native scenarios, operations, and exact adapter parity
 frontend/              static scenario runner plus isolated Nginx build context
 docker/                pinned backend and compose runtime topology
 candidate-registry/    exact M420 prerelease candidate artifacts

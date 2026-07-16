@@ -1,67 +1,21 @@
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::time::Duration;
-
 use async_trait::async_trait;
 use ranvier_core::prelude::*;
 use ranvier_http::prelude::*;
 use ranvier_runtime::Axon;
-use serde::{Deserialize, Serialize};
 
 use crate::domain::{
-    AuthorizationFault, EvidenceSnapshot, OrderAuthorizationRequest, OrderAuthorizationResult,
-    OrderResources, authorization_workflow,
+    AuthorizationFault, EvidenceSnapshot, OrderAuthorizationRequest, OrderResources,
 };
-use crate::store::PgDecisionStore;
+use crate::http_contract::{AuthorizationHttpResponse, execute_authorization};
+use crate::startup::load_production_context;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(tag = "status", rename_all = "snake_case")]
-pub enum AuthorizationEnvelope {
-    Ok { result: OrderAuthorizationResult },
-    Fault { fault: AuthorizationFault },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AuthorizationHttpResponse {
-    status: u16,
-    body: AuthorizationEnvelope,
-}
-
-impl AuthorizationHttpResponse {
-    fn success(result: OrderAuthorizationResult) -> Self {
-        Self {
-            status: http::StatusCode::OK.as_u16(),
-            body: AuthorizationEnvelope::Ok { result },
-        }
-    }
-
-    fn fault(fault: AuthorizationFault) -> Self {
-        let status = match fault.code.as_str() {
-            "order_id_invalid"
-            | "idempotency_key_invalid"
-            | "customer_id_invalid"
-            | "payment_reference_invalid"
-            | "items_invalid"
-            | "amount_invalid"
-            | "currency_invalid" => http::StatusCode::BAD_REQUEST,
-            "idempotency_key_conflict" | "decision_reconciliation_conflict" => {
-                http::StatusCode::CONFLICT
-            }
-            "inventory_out_of_stock" | "payment_declined" => http::StatusCode::UNPROCESSABLE_ENTITY,
-            _ => http::StatusCode::SERVICE_UNAVAILABLE,
-        };
-        Self {
-            status: status.as_u16(),
-            body: AuthorizationEnvelope::Fault { fault },
-        }
-    }
-}
+pub use crate::http_contract::AuthorizationEnvelope;
 
 impl IntoResponse for AuthorizationHttpResponse {
     fn into_response(self) -> HttpResponse {
-        let mut response = Json(self.body).into_response();
-        *response.status_mut() = http::StatusCode::from_u16(self.status)
-            .unwrap_or(http::StatusCode::INTERNAL_SERVER_ERROR);
+        let (status, body) = self.into_parts();
+        let mut response = Json(body).into_response();
+        *response.status_mut() = status;
         response
     }
 }
@@ -88,27 +42,8 @@ impl Transition<OrderAuthorizationRequest, AuthorizationHttpResponse> for Native
         resources: &Self::Resources,
         bus: &mut Bus,
     ) -> Outcome<AuthorizationHttpResponse, Self::Error> {
-        let fallback_request = request.clone();
-        let response = match authorization_workflow()
-            .execute(request, resources, bus)
-            .await
-        {
-            Outcome::Next(result) => AuthorizationHttpResponse::success(result),
-            Outcome::Fault(fault) => AuthorizationHttpResponse::fault(fault),
-            Outcome::Branch(_, _) | Outcome::Jump(_, _) | Outcome::Emit(_, _) => {
-                AuthorizationHttpResponse::fault(AuthorizationFault {
-                    code: "unexpected_domain_control_flow".to_string(),
-                    failed_step: "NativeHttpAuthorizationAdapter".to_string(),
-                    message: "domain workflow returned unsupported non-terminal control flow"
-                        .to_string(),
-                    order_id: fallback_request.order_id,
-                    idempotency_key: fallback_request.idempotency_key,
-                    retryable: false,
-                    operator_action_required: true,
-                    compensations: Vec::new(),
-                })
-            }
-        };
+        let response =
+            execute_authorization(request, resources, bus, "NativeHttpAuthorizationAdapter").await;
         Outcome::Next(response)
     }
 }
@@ -176,53 +111,8 @@ pub fn build_native_ingress() -> HttpIngress<OrderResources> {
         .get_json_out("/api/health", health)
 }
 
-fn production_config_path() -> PathBuf {
-    if let Some(path) = std::env::var_os("RANVIER_CONFIG") {
-        return PathBuf::from(path);
-    }
-    let repository_path = Path::new("backend/ranvier.toml");
-    if repository_path.is_file() {
-        repository_path.to_path_buf()
-    } else {
-        PathBuf::from("ranvier.toml")
-    }
-}
-
-async fn connect_postgres(database_url: &str) -> Result<sqlx::PgPool, std::io::Error> {
-    for attempt in 1..=10 {
-        match sqlx::PgPool::connect(database_url).await {
-            Ok(pool) => return Ok(pool),
-            Err(_) if attempt < 10 => {
-                tracing::warn!(attempt, "PostgreSQL connection unavailable; retrying");
-                tokio::time::sleep(Duration::from_secs(2)).await;
-            }
-            Err(_) => break,
-        }
-    }
-    Err(std::io::Error::other(
-        "PostgreSQL connection failed after bounded retries",
-    ))
-}
-
 pub async fn run_native_from_env() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let resolved =
-        ResolvedRuntimeConfig::from_file_for(production_config_path(), RuntimeProfile::Production)
-            .map_err(|_| std::io::Error::other("production configuration resolution failed"))?;
-    resolved
-        .validate_startup(&[])
-        .map_err(|_| std::io::Error::other("production startup policy validation failed"))?;
-
-    let config = resolved.config().clone();
-    config.init_logging();
-
-    let database_url = std::env::var("DATABASE_URL").map_err(|_| {
-        std::io::Error::other("DATABASE_URL must be configured for the production profile")
-    })?;
-    let pool = connect_postgres(&database_url).await?;
-    let store = PgDecisionStore::initialize(pool)
-        .await
-        .map_err(|_| std::io::Error::other("order decision schema initialization failed"))?;
-    let resources = OrderResources::new(Arc::new(store));
+    let context = load_production_context().await?;
 
     tracing::info!(
         profile = "production",
@@ -230,7 +120,7 @@ pub async fn run_native_from_env() -> Result<(), Box<dyn std::error::Error + Sen
         "starting canonical order-authorization service"
     );
     build_native_ingress()
-        .config(&config)
-        .run_managed(resources)
+        .config(&context.config)
+        .run_managed(context.resources)
         .await
 }

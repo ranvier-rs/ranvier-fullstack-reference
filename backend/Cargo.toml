@@ -24,5 +24,7 @@ schemars = { version = "1", features = ["derive"] }
 async-trait = "0.1"
 sha2 = "0.10"
 http = "1"
+axum = "=0.8.9"
+tower = { version = "=0.5.3", features = ["limit", "util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
