@@ -1,0 +1,19 @@
+[package]
+name = "ranvier-m420-consumer-smoke"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93.0"
+publish = false
+
+[dependencies]
+async-trait = "0.1"
+ranvier-core = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
+ranvier-http = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
+ranvier-runtime = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
+schemars = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+
+[dev-dependencies]
+http = "1"

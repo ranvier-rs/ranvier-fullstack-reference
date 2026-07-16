@@ -1,0 +1,112 @@
+{
+  "schema_version": "1.0.0",
+  "claim_level": "maintainer-local-versioned-prerelease-registry",
+  "captured_at": "2026-07-17T03:19:10+09:00",
+  "source_commit": "732d0734a3f9e479932935f6022545fbca8a66f1",
+  "source_version": "0.51.0",
+  "candidate_version": "0.51.0-m420.1",
+  "package_count": 12,
+  "packages": [
+    {
+      "package": "ranvier",
+      "version": "0.51.0-m420.1",
+      "bytes": 23261,
+      "sha256": "ae01ec5e2be551051e3b7ed8f05abaef6a2682bc01bc83664c1472fbd8f33859",
+      "source_artifact": "ranvier-0.51.0.crate",
+      "source_sha256": "f5c127c202f6f480d23c54d52590e091d79c8cd98174e87c310c35d87f3e3d8e"
+    },
+    {
+      "package": "ranvier-audit",
+      "version": "0.51.0-m420.1",
+      "bytes": 35003,
+      "sha256": "4ea8f0f606364685e243baa28c50334cb7cc1539c4dc1e34a06e8c969a154c38",
+      "source_artifact": "ranvier-audit-0.51.0.crate",
+      "source_sha256": "989f21c5c083234e5ed8f9c16efaba5476c32da31e75a913eefd36c60b070d28"
+    },
+    {
+      "package": "ranvier-compliance",
+      "version": "0.51.0-m420.1",
+      "bytes": 10448,
+      "sha256": "3f5351f3e23f06c0dc3c63ae74e0488f56a50ed1faf3a0792825e1fba78cf7be",
+      "source_artifact": "ranvier-compliance-0.51.0.crate",
+      "source_sha256": "59ccda5f37572723c789c9b867e7b51d727d5371702f3cf918861417c924c340"
+    },
+    {
+      "package": "ranvier-core",
+      "version": "0.51.0-m420.1",
+      "bytes": 64731,
+      "sha256": "35b799ac3d152e06d3c880f11c87232d7f8ee1cf880b0602425d41a20875bb7d",
+      "source_artifact": "ranvier-core-0.51.0.crate",
+      "source_sha256": "7d6a7ed95de3519f65f8580dd65cdffe5e527d8cfe32edeac6300c72f3440b1b"
+    },
+    {
+      "package": "ranvier-guard",
+      "version": "0.51.0-m420.1",
+      "bytes": 36810,
+      "sha256": "d3e8ecd8a4c94cce2f2e42e335ffaf445f3c4000cd3f38fd8f6434e181c1d128",
+      "source_artifact": "ranvier-guard-0.51.0.crate",
+      "source_sha256": "33d40254fa7435ead4870a76d8a12d2a3348e5f201779d5c2f0f0fc2b8445ba4"
+    },
+    {
+      "package": "ranvier-http",
+      "version": "0.51.0-m420.1",
+      "bytes": 102814,
+      "sha256": "e3ad4c3e58b20fc86c0c6f55f53a274ce457b4c2dfcabd29fa9ff2b1e7ded856",
+      "source_artifact": "ranvier-http-0.51.0.crate",
+      "source_sha256": "bde0787a17f3175e06c37d99f096de48bf7350f50f7f8ee4078185e1057a13ce"
+    },
+    {
+      "package": "ranvier-inspector",
+      "version": "0.51.0-m420.1",
+      "bytes": 69283,
+      "sha256": "9216be22289749317c05b0342f80f5e6d2ecc073b82db015af4873122fcf6e63",
+      "source_artifact": "ranvier-inspector-0.51.0.crate",
+      "source_sha256": "ec6526c5a0bb821ea3135a0ac9e72138d05a9b504ca444aa643980897f54618a"
+    },
+    {
+      "package": "ranvier-macros",
+      "version": "0.51.0-m420.1",
+      "bytes": 8944,
+      "sha256": "46cbe82c67d0b92bc59bcc90572cd4d7556c59053b8cf75bce7642ad9c8dbdf3",
+      "source_artifact": "ranvier-macros-0.51.0.crate",
+      "source_sha256": "55bb924f1df5ca56a34bf7d5735d89b39378ade5cbcf7db48b25f79e2e99fbfe"
+    },
+    {
+      "package": "ranvier-openapi",
+      "version": "0.51.0-m420.1",
+      "bytes": 19685,
+      "sha256": "23a5762fbb298fb21ad1770e51823c300288c38b1cfa5d6b9261166fc13a5545",
+      "source_artifact": "ranvier-openapi-0.51.0.crate",
+      "source_sha256": "3f58785194aff01191f81a9e3584e165099a604b3906f552992a39176e48ec04"
+    },
+    {
+      "package": "ranvier-runtime",
+      "version": "0.51.0-m420.1",
+      "bytes": 106563,
+      "sha256": "9e9e6fafee0b1e14775e76c20c746a256e876e44d683e2ca14865ef68c24b239",
+      "source_artifact": "ranvier-runtime-0.51.0.crate",
+      "source_sha256": "14b40378d74fb9fe61099be7e9f7e5c954a09408dbc8854d7e355b3a79755926"
+    },
+    {
+      "package": "ranvier-std",
+      "version": "0.51.0-m420.1",
+      "bytes": 14247,
+      "sha256": "77b9e6333983379461ad54ff3db1d2759d84455e883eb9115a327a1b637e2a06",
+      "source_artifact": "ranvier-std-0.51.0.crate",
+      "source_sha256": "b16e8a7eae6f6faee78978a16894853c7561953485a33964574d987aaa856b03"
+    },
+    {
+      "package": "ranvier-test",
+      "version": "0.51.0-m420.1",
+      "bytes": 9922,
+      "sha256": "46981d7971936bebd01117d17512fd8fc83f006a5208d3511206c83618ccef0c",
+      "source_artifact": "ranvier-test-0.51.0.crate",
+      "source_sha256": "f8cf38b73b86932e065dc805e4e940aa6ce70ac717d7c18ff7781ceb44c1abe4"
+    }
+  ],
+  "exclusions": [
+    "This is not crates.io publication evidence.",
+    "This is not independently owned adopter evidence.",
+    "The registry is a deterministic local candidate channel for path-free consumer validation."
+  ]
+}

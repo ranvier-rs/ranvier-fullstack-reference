@@ -1,0 +1,6 @@
+candidate-registry/crates/** -text
+candidate-registry/index/** text eol=lf
+candidate-registry/MANIFEST.json text eol=lf
+consumer-smoke/** text eol=lf
+scripts/*.mjs text eol=lf
+CANDIDATE_REGISTRY.md text eol=lf
