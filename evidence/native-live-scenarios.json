@@ -1,0 +1,368 @@
+{
+  "schema_version": "1.0.0",
+  "base_url": "http://127.0.0.1:43040",
+  "prefix": "m420-rq4-live",
+  "health": {
+    "ranvier_candidate": "0.51.0-m420.1",
+    "service": "order-authorization-native",
+    "status": "ok"
+  },
+  "scenarios": {
+    "s1": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq4-live-s1",
+          "reservation_id": "res-71cf93705648fb3b",
+          "payment_authorization_id": "pay-71cf93705648fb3b",
+          "decision_id": "dec-cf0b5744855fd2c2"
+        }
+      }
+    },
+    "s2": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "manual_review",
+          "order_id": "m420-rq4-live-s2",
+          "reason_codes": [
+            "risk_review_required"
+          ]
+        }
+      }
+    },
+    "s3": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "rejected",
+          "order_id": "m420-rq4-live-s3",
+          "reason_codes": [
+            "policy_rejected"
+          ]
+        }
+      }
+    },
+    "s4": {
+      "status": 422,
+      "body": {
+        "status": "fault",
+        "fault": {
+          "code": "inventory_out_of_stock",
+          "failed_step": "ReserveInventory",
+          "message": "inventory could not satisfy the requested quantity",
+          "order_id": "m420-rq4-live-s4",
+          "idempotency_key": "m420-rq4-live-s4",
+          "retryable": false,
+          "operator_action_required": false,
+          "compensations": []
+        }
+      }
+    },
+    "s5": {
+      "status": 422,
+      "body": {
+        "status": "fault",
+        "fault": {
+          "code": "payment_declined",
+          "failed_step": "AuthorizePayment",
+          "message": "payment authorization was declined",
+          "order_id": "m420-rq4-live-s5",
+          "idempotency_key": "m420-rq4-live-s5",
+          "retryable": false,
+          "operator_action_required": false,
+          "compensations": [
+            {
+              "action": "release_inventory",
+              "resource_id": "res-c53007ba37f7f840",
+              "status": "applied"
+            }
+          ]
+        }
+      }
+    },
+    "s6": {
+      "status": 503,
+      "body": {
+        "status": "fault",
+        "fault": {
+          "code": "decision_write_failed",
+          "failed_step": "RecordDecision",
+          "message": "decision and audit were not committed",
+          "order_id": "m420-rq4-live-s6",
+          "idempotency_key": "m420-rq4-live-s6",
+          "retryable": true,
+          "operator_action_required": false,
+          "compensations": [
+            {
+              "action": "void_payment",
+              "resource_id": "pay-077534083203fb22",
+              "status": "applied"
+            },
+            {
+              "action": "release_inventory",
+              "resource_id": "res-077534083203fb22",
+              "status": "applied"
+            }
+          ]
+        }
+      }
+    },
+    "s7_first": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq4-live-s7",
+          "reservation_id": "res-1037607d26952ee1",
+          "payment_authorization_id": "pay-1037607d26952ee1",
+          "decision_id": "dec-3e33cc7b01120499"
+        }
+      }
+    },
+    "s7_retry": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq4-live-s7",
+          "reservation_id": "res-1037607d26952ee1",
+          "payment_authorization_id": "pay-1037607d26952ee1",
+          "decision_id": "dec-3e33cc7b01120499"
+        }
+      }
+    },
+    "s8": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq4-live-s8",
+          "reservation_id": "res-e18425066fc1bb11",
+          "payment_authorization_id": "pay-e18425066fc1bb11",
+          "decision_id": "dec-38051fc15b241423"
+        }
+      }
+    }
+  },
+  "evidence": {
+    "decisions": [
+      {
+        "decision_id": "dec-cf0b5744855fd2c2",
+        "order_id": "m420-rq4-live-s1",
+        "idempotency_key": "m420-rq4-live-s1",
+        "request_digest": "15d83588defdd55c30e88d0b41e0beaa0a8d4903d49f7bc493b285545bb0e0b8",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq4-live-s1",
+          "reservation_id": "res-71cf93705648fb3b",
+          "payment_authorization_id": "pay-71cf93705648fb3b",
+          "decision_id": "dec-cf0b5744855fd2c2"
+        }
+      },
+      {
+        "decision_id": "dec-29427d7b71e7e842",
+        "order_id": "m420-rq4-live-s2",
+        "idempotency_key": "m420-rq4-live-s2",
+        "request_digest": "f767a5c6f624b9c80a15e7448707bc451d1ac6c00fbf302b89bc7a1e2aabd1c6",
+        "result": {
+          "outcome": "manual_review",
+          "order_id": "m420-rq4-live-s2",
+          "reason_codes": [
+            "risk_review_required"
+          ]
+        }
+      },
+      {
+        "decision_id": "dec-8734744850bacf87",
+        "order_id": "m420-rq4-live-s3",
+        "idempotency_key": "m420-rq4-live-s3",
+        "request_digest": "e654f944afa12f0031a86a1d56c20cffdfe12fc282b23890ef49e4de59016558",
+        "result": {
+          "outcome": "rejected",
+          "order_id": "m420-rq4-live-s3",
+          "reason_codes": [
+            "policy_rejected"
+          ]
+        }
+      },
+      {
+        "decision_id": "dec-3e33cc7b01120499",
+        "order_id": "m420-rq4-live-s7",
+        "idempotency_key": "m420-rq4-live-s7",
+        "request_digest": "e38cca84cc31109630a23e27ed6881e9a37f96070efa3adc23cc6b01dff8d37e",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq4-live-s7",
+          "reservation_id": "res-1037607d26952ee1",
+          "payment_authorization_id": "pay-1037607d26952ee1",
+          "decision_id": "dec-3e33cc7b01120499"
+        }
+      },
+      {
+        "decision_id": "dec-38051fc15b241423",
+        "order_id": "m420-rq4-live-s8",
+        "idempotency_key": "m420-rq4-live-s8",
+        "request_digest": "1add7dc75090962361f2536460258ccf42ac6a47a0bd1bef8f1dc4040132b622",
+        "result": {
+          "outcome": "approved",
+          "order_id": "m420-rq4-live-s8",
+          "reservation_id": "res-e18425066fc1bb11",
+          "payment_authorization_id": "pay-e18425066fc1bb11",
+          "decision_id": "dec-38051fc15b241423"
+        }
+      }
+    ],
+    "audits": [
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-cf0b5744855fd2c2",
+        "order_id": "m420-rq4-live-s1",
+        "idempotency_key": "m420-rq4-live-s1",
+        "request_digest": "15d83588defdd55c30e88d0b41e0beaa0a8d4903d49f7bc493b285545bb0e0b8",
+        "correlation_id": "cor-46c203fee07caa28",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-29427d7b71e7e842",
+        "order_id": "m420-rq4-live-s2",
+        "idempotency_key": "m420-rq4-live-s2",
+        "request_digest": "f767a5c6f624b9c80a15e7448707bc451d1ac6c00fbf302b89bc7a1e2aabd1c6",
+        "correlation_id": "cor-d30e6a7006049869",
+        "terminal_outcome": "manual_review",
+        "reason_codes": [
+          "risk_review_required"
+        ]
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-8734744850bacf87",
+        "order_id": "m420-rq4-live-s3",
+        "idempotency_key": "m420-rq4-live-s3",
+        "request_digest": "e654f944afa12f0031a86a1d56c20cffdfe12fc282b23890ef49e4de59016558",
+        "correlation_id": "cor-264dcc668bed674a",
+        "terminal_outcome": "rejected",
+        "reason_codes": [
+          "policy_rejected"
+        ]
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-3e33cc7b01120499",
+        "order_id": "m420-rq4-live-s7",
+        "idempotency_key": "m420-rq4-live-s7",
+        "request_digest": "e38cca84cc31109630a23e27ed6881e9a37f96070efa3adc23cc6b01dff8d37e",
+        "correlation_id": "cor-6dc4b9c27ebfc6ee",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "event_type": "order_authorization_recorded",
+        "decision_id": "dec-38051fc15b241423",
+        "order_id": "m420-rq4-live-s8",
+        "idempotency_key": "m420-rq4-live-s8",
+        "request_digest": "1add7dc75090962361f2536460258ccf42ac6a47a0bd1bef8f1dc4040132b622",
+        "correlation_id": "cor-b99295144588a80e",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      }
+    ],
+    "side_effect_events": [
+      {
+        "sequence": 8,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq4-live-s1",
+        "resource_id": "res-71cf93705648fb3b",
+        "status": "applied"
+      },
+      {
+        "sequence": 11,
+        "action": "payment_authorized",
+        "order_id": "m420-rq4-live-s1",
+        "resource_id": "pay-71cf93705648fb3b",
+        "status": "applied"
+      },
+      {
+        "sequence": 60,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq4-live-s5",
+        "resource_id": "res-c53007ba37f7f840",
+        "status": "applied"
+      },
+      {
+        "sequence": 63,
+        "action": "inventory_released",
+        "order_id": "m420-rq4-live-s5",
+        "resource_id": "res-c53007ba37f7f840",
+        "status": "applied"
+      },
+      {
+        "sequence": 72,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq4-live-s6",
+        "resource_id": "res-077534083203fb22",
+        "status": "applied"
+      },
+      {
+        "sequence": 75,
+        "action": "payment_authorized",
+        "order_id": "m420-rq4-live-s6",
+        "resource_id": "pay-077534083203fb22",
+        "status": "applied"
+      },
+      {
+        "sequence": 78,
+        "action": "payment_voided",
+        "order_id": "m420-rq4-live-s6",
+        "resource_id": "pay-077534083203fb22",
+        "status": "applied"
+      },
+      {
+        "sequence": 79,
+        "action": "inventory_released",
+        "order_id": "m420-rq4-live-s6",
+        "resource_id": "res-077534083203fb22",
+        "status": "applied"
+      },
+      {
+        "sequence": 88,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq4-live-s7",
+        "resource_id": "res-1037607d26952ee1",
+        "status": "applied"
+      },
+      {
+        "sequence": 91,
+        "action": "payment_authorized",
+        "order_id": "m420-rq4-live-s7",
+        "resource_id": "pay-1037607d26952ee1",
+        "status": "applied"
+      },
+      {
+        "sequence": 118,
+        "action": "inventory_reserved",
+        "order_id": "m420-rq4-live-s8",
+        "resource_id": "res-e18425066fc1bb11",
+        "status": "applied"
+      },
+      {
+        "sequence": 121,
+        "action": "payment_authorized",
+        "order_id": "m420-rq4-live-s8",
+        "resource_id": "pay-e18425066fc1bb11",
+        "status": "applied"
+      }
+    ],
+    "trace_event_count": 114
+  },
+  "result": "pass"
+}

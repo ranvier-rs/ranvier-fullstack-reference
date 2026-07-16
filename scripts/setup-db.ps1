@@ -10,7 +10,7 @@ Write-Host "╔═════════════════════�
 Write-Host "║  Ranvier DB Setup                    ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "[INFO] DATABASE_URL: $DatabaseUrl" -ForegroundColor DarkGray
+Write-Host "[INFO] Using the configured PostgreSQL connection (value redacted)." -ForegroundColor DarkGray
 Write-Host ""
 
 # Check psql is available
@@ -22,19 +22,23 @@ if (-not (Get-Command "psql" -ErrorAction SilentlyContinue)) {
 
 Write-Host "[INFO] Running schema bootstrap via psql…" -ForegroundColor Cyan
 $sql = @"
-CREATE TABLE IF NOT EXISTS notes (
-    id    SERIAL PRIMARY KEY,
-    title VARCHAR NOT NULL,
-    body  TEXT    NOT NULL
+CREATE TABLE IF NOT EXISTS order_authorization_decisions (
+    decision_id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    request_digest TEXT NOT NULL,
+    result JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-INSERT INTO notes (title, body) VALUES
-    ('Welcome', 'Ranvier fullstack reference is running!'),
-    ('Architecture', 'Reverse proxy → SPA + /api → Ranvier backend'),
-    ('v0.10.0 Released', 'All gates passed. Typed Decision Engine is stable.')
-ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS order_authorization_audit (
+    audit_id BIGSERIAL PRIMARY KEY,
+    decision_id TEXT NOT NULL UNIQUE REFERENCES order_authorization_decisions(decision_id),
+    event JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 "@
 
 $sql | psql $DatabaseUrl
 
 Write-Host ""
-Write-Host "[OK] Schema ready and seed data inserted." -ForegroundColor Green
+Write-Host "[OK] Order decision and audit schema ready." -ForegroundColor Green

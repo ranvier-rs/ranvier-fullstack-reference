@@ -1,82 +1,122 @@
-# Ranvier Fullstack Reference
+# Ranvier Fullstack Order-Authorization Reference
 
-A production-like reference architecture demonstrating the M419-inclusive
-**Ranvier `0.51.0-m420.1` candidate** in a real full-stack deployment topology.
+This repository demonstrates the M420 canonical business workflow using the
+exact Ranvier `0.51.0-m420.1` local candidate. The native adapter owns HTTP
+routing and managed lifecycle; the application-owned Axon owns validation,
+policy, idempotency, inventory/payment effects, compensation, and durable
+decision/audit behavior.
 
-## Feature Showcase
+This remains maintainer-owned dogfood. It is not crates.io publication or an
+independently owned adoption result.
 
-- **`get_json_out`** / **`post_typed_json_out`**: Auto-serialize typed Outcome as JSON at route boundary
-- **`try_outcome!`**: Ergonomic `Result → Outcome::Fault` conversion
-- **`Bus::get_cloned()`**: Concise resource extraction
-- **`CorsGuard::permissive()`**: One-line dev CORS
-- **Typed Transitions**: Return domain structs, not `String` — serialization is infrastructure
+## Why This Workflow
 
-## Architecture
+Notes CRUD has been removed because plain handlers are the better default for
+simple CRUD. Order authorization has a concrete reason to use a typed decision
+workflow:
 
-```
-┌─────────────────┐
-│   Browser :8080  │
-└────────┬────────┘
-         │
-  ┌──────▼──────┐
-  │  Nginx Proxy │  ← serves static SPA + proxies /api
-  └──┬───────┬──┘
-     │       │
-┌────▼───┐ ┌─▼────────────┐
-│Frontend│ │ Ranvier API  │  ← :3000 /api/*
-│(static)│ │ (Rust/Axon)  │
-└────────┘ └──────┬───────┘
-                  │
-           ┌──────▼──────┐
-           │ PostgreSQL   │  ← :5432
-           └─────────────┘
+```text
+ValidateRequest
+  -> ResolveIdempotency
+  -> ScreenPolicy
+  -> ReserveInventory
+  -> AuthorizePayment
+  -> RecordDecision
+  -> CompleteAuthorization
 ```
 
-## Quick Start
+Policy decisions occur before effects. A payment failure releases inventory.
+A definite decision-write failure voids payment and then releases inventory.
+An unknown commit outcome is reconciled before any compensation; blind
+compensation is prohibited.
+
+## Source and Runtime Boundaries
+
+- The backend resolves exact registry dependencies from the committed local
+  sparse candidate; it has no `path`, Git, or `[patch]` dependency.
+- `node scripts/run-local-source.mjs ...` is an explicit maintainer-only source
+  override and is excluded from adoption evidence.
+- `backend/ranvier.toml` selects the typed production profile, JSON logging,
+  disabled Inspector, and a 30-second managed drain deadline.
+- PostgreSQL atomically stores the terminal decision and redacted audit event.
+- The runtime image is pinned, non-root, and contains the production config.
+- Production Compose requires externally supplied PostgreSQL credentials and a
+  complete `DATABASE_URL`; no production password default is committed.
+- The static frontend and API share one Nginx origin; no permissive CORS policy
+  is required.
+
+## Verify
+
+Prerequisites are Node 24 and Rust 1.95 (the crate MSRV remains Rust 1.93).
 
 ```bash
-# 1. Clone this repo
-# 2. Verify the backend directly (Node 24 + Rust 1.95)
 node scripts/candidate-cargo.mjs check --manifest-path backend/Cargo.toml --locked
-
-# 3. Deploy locally (requires Docker or Podman)
-pwsh scripts/deploy-local.ps1    # Windows
-bash scripts/deploy-local.sh     # Linux/macOS
-
-# 3. Open http://localhost:8080
+node scripts/candidate-cargo.mjs test --manifest-path backend/Cargo.toml --locked
+node scripts/candidate-cargo.mjs clippy --manifest-path backend/Cargo.toml --locked --all-targets -- -D warnings
+node scripts/candidate-cargo.mjs run --manifest-path backend/Cargo.toml --locked -- --schematic --output evidence/native-schematic.json
 ```
 
-## Structure
+The twelve native HTTP tests exercise S1-S8 through Ranvier's in-process HTTP/1
+boundary, plus invalid input, production startup policy, Schematic structure,
+and structured graceful shutdown.
 
-```
-├── backend/           # Ranvier HTTP API (Rust)
-├── frontend/          # Static SPA (HTML/CSS/JS)
-├── docker/
-│   ├── compose/       # compose.dev.yml, compose.prod.yml
-│   ├── backend.Dockerfile
-│   ├── frontend.Dockerfile
-│   └── nginx.conf
-├── scripts/           # deploy-local, setup-db, build-all
-├── .env.example
-└── README.md
+## Run
+
+```bash
+pwsh scripts/deploy-local.ps1
+# or: bash scripts/deploy-local.sh
 ```
 
-## Endpoints
+Open `http://localhost:8080`, or call the public behavior directly:
 
-| Method | Path          | Description                    |
-|--------|---------------|--------------------------------|
-| GET    | `/api/health` | Health check (typed JSON)      |
-| GET    | `/api/notes`  | List notes (PostgreSQL → JSON) |
-| POST   | `/api/notes`  | Create note (typed input/output) |
+```bash
+curl -sS http://localhost:8080/api/order-authorizations \
+  -H 'content-type: application/json' \
+  -d '{
+    "order_id":"order-demo-001",
+    "idempotency_key":"idem-demo-001",
+    "customer_id":"customer-demo",
+    "items":[{"item_id":"sku-001","quantity":2}],
+    "amount_minor":12500,
+    "currency":"USD",
+    "payment_reference":"payment-token-demo",
+    "fixture":"normal"
+  }'
+```
 
-## Design Decisions
+Changing only the fixture selects the deterministic scenarios:
 
-- **Reverse proxy pattern**: Nginx serves the static frontend and proxies `/api` to the Ranvier backend. `Ranvier::http()` is an **Ingress Builder**, not a web server.
-- **Separate containers**: Backend, frontend, and DB each run in their own container for clear deployment boundaries.
-- **Registry-first dependency mode**: The backend defaults to exact
-  `0.51.0-m420.1` packages in the committed candidate registry, so a clone does
-  not need a sibling Ranvier checkout. This local candidate is not crates.io.
-- **Explicit maintainer override**: `node scripts/run-local-source.mjs check`
-  creates a temporary backend copy with source paths. It never changes the
-  default manifest and is excluded from consumer evidence.
-- **Typed JSON serialization at boundary**: Transitions return domain structs (`Note`, `HealthResponse`). JSON serialization happens at the route level via `get_json_out` / `post_typed_json_out`, aligning with PHILOSOPHY.md §5 "Infrastructure as Boundary".
+| Scenario | Fixture | Expected public behavior |
+|---|---|---|
+| S1 | `normal` | Approved; one reservation, payment, decision, and audit |
+| S2 | `manual_review` | ManualReview; no external effect |
+| S3 | `policy_rejected` | Rejected; no external effect |
+| S4 | `out_of_stock` | structured 422 fault; no payment |
+| S5 | `payment_declined` | structured 422 fault; inventory released once |
+| S6 | `decision_write_failure` | structured 503 fault; payment voided, then inventory released |
+| S7 | repeat an identical request | original result; no repeated effect |
+| S8 | `ack_lost_after_commit` | committed result recovered before compensation |
+
+## Public Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/health` | candidate and native-adapter health |
+| `POST` | `/api/order-authorizations` | typed terminal result or structured fault |
+| `GET` | `/api/order-authorizations/evidence` | redacted decisions, audit, effects, and domain trace |
+
+The evidence response never contains raw payment data, credentials, email, or
+access tokens. The request's `payment_reference` is explicitly non-secret and
+is used only to compute the request digest; it is not persisted in evidence.
+
+## Layout
+
+```text
+backend/src/domain.rs  shared application workflow and deterministic effect ledger
+backend/src/store.rs   in-memory test and atomic PostgreSQL decision stores
+backend/src/native.rs  native Ranvier HTTP and managed lifecycle adapter
+backend/tests/         public-boundary S1-S8 and operations tests
+frontend/              static scenario runner plus isolated Nginx build context
+docker/                pinned backend and compose runtime topology
+candidate-registry/    exact M420 prerelease candidate artifacts
+```

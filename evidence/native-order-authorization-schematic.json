@@ -1,0 +1,1492 @@
+{
+  "schema_version": "1.0",
+  "id": "ae9223d8-7a34-4192-b345-32480e894ed5",
+  "name": "order-authorization",
+  "generated_at": "2026-07-16T19:48:19.020577300Z",
+  "nodes": [
+    {
+      "id": "0bc2e0bd-5d5d-4e52-9806-bfeeabe26a8d",
+      "kind": "Ingress",
+      "label": "order-authorization",
+      "input_type": "void",
+      "output_type": "OrderAuthorizationRequest",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1030
+      }
+    },
+    {
+      "id": "3a1b9ade-1022-4533-b14e-167e80e1df61",
+      "kind": "Atom",
+      "label": "ValidateRequest",
+      "description": "Validate the adapter-neutral order contract before side effects",
+      "input_type": "OrderAuthorizationRequest",
+      "output_type": "WorkflowState",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1036
+      },
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "input_schema": {
+        "$defs": {
+          "Fixture": {
+            "enum": [
+              "normal",
+              "manual_review",
+              "policy_rejected",
+              "out_of_stock",
+              "payment_declined",
+              "decision_write_failure",
+              "ack_lost_after_commit"
+            ],
+            "type": "string"
+          },
+          "OrderItem": {
+            "properties": {
+              "item_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "item_id",
+              "quantity"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "amount_minor": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "customer_id": {
+            "type": "string"
+          },
+          "fixture": {
+            "$ref": "#/$defs/Fixture",
+            "default": "normal"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/$defs/OrderItem"
+            },
+            "type": "array"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "payment_reference": {
+            "description": "Non-secret token issued by the payment boundary. Raw payment data is forbidden.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_id",
+          "idempotency_key",
+          "customer_id",
+          "items",
+          "amount_minor",
+          "currency",
+          "payment_reference"
+        ],
+        "title": "OrderAuthorizationRequest",
+        "type": "object"
+      }
+    },
+    {
+      "id": "90027620-1b6f-444f-af7d-d24d49f8ddf9",
+      "kind": "Atom",
+      "label": "ResolveIdempotency",
+      "description": "Return matching durable decisions and reject conflicting key reuse",
+      "input_type": "WorkflowState",
+      "output_type": "WorkflowState",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1037
+      },
+      "position": {
+        "x": 240.0,
+        "y": 0.0
+      },
+      "input_schema": {
+        "$defs": {
+          "Fixture": {
+            "enum": [
+              "normal",
+              "manual_review",
+              "policy_rejected",
+              "out_of_stock",
+              "payment_declined",
+              "decision_write_failure",
+              "ack_lost_after_commit"
+            ],
+            "type": "string"
+          },
+          "OrderAuthorizationRequest": {
+            "properties": {
+              "amount_minor": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "customer_id": {
+                "type": "string"
+              },
+              "fixture": {
+                "$ref": "#/$defs/Fixture",
+                "default": "normal"
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/OrderItem"
+                },
+                "type": "array"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "payment_reference": {
+                "description": "Non-secret token issued by the payment boundary. Raw payment data is forbidden.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "order_id",
+              "idempotency_key",
+              "customer_id",
+              "items",
+              "amount_minor",
+              "currency",
+              "payment_reference"
+            ],
+            "type": "object"
+          },
+          "OrderAuthorizationResult": {
+            "oneOf": [
+              {
+                "properties": {
+                  "decision_id": {
+                    "type": "string"
+                  },
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "approved",
+                    "type": "string"
+                  },
+                  "payment_authorization_id": {
+                    "type": "string"
+                  },
+                  "reservation_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reservation_id",
+                  "payment_authorization_id",
+                  "decision_id"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "manual_review",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "rejected",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "OrderItem": {
+            "properties": {
+              "item_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "item_id",
+              "quantity"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "payment_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "request": {
+            "$ref": "#/$defs/OrderAuthorizationRequest"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "reservation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OrderAuthorizationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request",
+          "request_digest",
+          "replayed"
+        ],
+        "title": "WorkflowState",
+        "type": "object"
+      }
+    },
+    {
+      "id": "e56d35fe-9ac0-41fc-a57d-0c829c708277",
+      "kind": "Atom",
+      "label": "ScreenPolicy",
+      "description": "Resolve deterministic business policy before external side effects",
+      "input_type": "WorkflowState",
+      "output_type": "WorkflowState",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1038
+      },
+      "position": {
+        "x": 480.0,
+        "y": 0.0
+      },
+      "input_schema": {
+        "$defs": {
+          "Fixture": {
+            "enum": [
+              "normal",
+              "manual_review",
+              "policy_rejected",
+              "out_of_stock",
+              "payment_declined",
+              "decision_write_failure",
+              "ack_lost_after_commit"
+            ],
+            "type": "string"
+          },
+          "OrderAuthorizationRequest": {
+            "properties": {
+              "amount_minor": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "customer_id": {
+                "type": "string"
+              },
+              "fixture": {
+                "$ref": "#/$defs/Fixture",
+                "default": "normal"
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/OrderItem"
+                },
+                "type": "array"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "payment_reference": {
+                "description": "Non-secret token issued by the payment boundary. Raw payment data is forbidden.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "order_id",
+              "idempotency_key",
+              "customer_id",
+              "items",
+              "amount_minor",
+              "currency",
+              "payment_reference"
+            ],
+            "type": "object"
+          },
+          "OrderAuthorizationResult": {
+            "oneOf": [
+              {
+                "properties": {
+                  "decision_id": {
+                    "type": "string"
+                  },
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "approved",
+                    "type": "string"
+                  },
+                  "payment_authorization_id": {
+                    "type": "string"
+                  },
+                  "reservation_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reservation_id",
+                  "payment_authorization_id",
+                  "decision_id"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "manual_review",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "rejected",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "OrderItem": {
+            "properties": {
+              "item_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "item_id",
+              "quantity"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "payment_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "request": {
+            "$ref": "#/$defs/OrderAuthorizationRequest"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "reservation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OrderAuthorizationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request",
+          "request_digest",
+          "replayed"
+        ],
+        "title": "WorkflowState",
+        "type": "object"
+      }
+    },
+    {
+      "id": "24e2369d-ae4b-4088-abe0-24481c66540a",
+      "kind": "Atom",
+      "label": "ReserveInventory",
+      "description": "Create one idempotent inventory reservation for eligible orders",
+      "input_type": "WorkflowState",
+      "output_type": "WorkflowState",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1039
+      },
+      "position": {
+        "x": 720.0,
+        "y": 0.0
+      },
+      "input_schema": {
+        "$defs": {
+          "Fixture": {
+            "enum": [
+              "normal",
+              "manual_review",
+              "policy_rejected",
+              "out_of_stock",
+              "payment_declined",
+              "decision_write_failure",
+              "ack_lost_after_commit"
+            ],
+            "type": "string"
+          },
+          "OrderAuthorizationRequest": {
+            "properties": {
+              "amount_minor": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "customer_id": {
+                "type": "string"
+              },
+              "fixture": {
+                "$ref": "#/$defs/Fixture",
+                "default": "normal"
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/OrderItem"
+                },
+                "type": "array"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "payment_reference": {
+                "description": "Non-secret token issued by the payment boundary. Raw payment data is forbidden.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "order_id",
+              "idempotency_key",
+              "customer_id",
+              "items",
+              "amount_minor",
+              "currency",
+              "payment_reference"
+            ],
+            "type": "object"
+          },
+          "OrderAuthorizationResult": {
+            "oneOf": [
+              {
+                "properties": {
+                  "decision_id": {
+                    "type": "string"
+                  },
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "approved",
+                    "type": "string"
+                  },
+                  "payment_authorization_id": {
+                    "type": "string"
+                  },
+                  "reservation_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reservation_id",
+                  "payment_authorization_id",
+                  "decision_id"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "manual_review",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "rejected",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "OrderItem": {
+            "properties": {
+              "item_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "item_id",
+              "quantity"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "payment_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "request": {
+            "$ref": "#/$defs/OrderAuthorizationRequest"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "reservation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OrderAuthorizationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request",
+          "request_digest",
+          "replayed"
+        ],
+        "title": "WorkflowState",
+        "type": "object"
+      }
+    },
+    {
+      "id": "942af335-ca67-420e-805c-6f3bfd16118e",
+      "kind": "Atom",
+      "label": "AuthorizePayment",
+      "description": "Authorize payment or release inventory on a definite payment failure",
+      "input_type": "WorkflowState",
+      "output_type": "WorkflowState",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1040
+      },
+      "position": {
+        "x": 960.0,
+        "y": 0.0
+      },
+      "input_schema": {
+        "$defs": {
+          "Fixture": {
+            "enum": [
+              "normal",
+              "manual_review",
+              "policy_rejected",
+              "out_of_stock",
+              "payment_declined",
+              "decision_write_failure",
+              "ack_lost_after_commit"
+            ],
+            "type": "string"
+          },
+          "OrderAuthorizationRequest": {
+            "properties": {
+              "amount_minor": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "customer_id": {
+                "type": "string"
+              },
+              "fixture": {
+                "$ref": "#/$defs/Fixture",
+                "default": "normal"
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/OrderItem"
+                },
+                "type": "array"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "payment_reference": {
+                "description": "Non-secret token issued by the payment boundary. Raw payment data is forbidden.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "order_id",
+              "idempotency_key",
+              "customer_id",
+              "items",
+              "amount_minor",
+              "currency",
+              "payment_reference"
+            ],
+            "type": "object"
+          },
+          "OrderAuthorizationResult": {
+            "oneOf": [
+              {
+                "properties": {
+                  "decision_id": {
+                    "type": "string"
+                  },
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "approved",
+                    "type": "string"
+                  },
+                  "payment_authorization_id": {
+                    "type": "string"
+                  },
+                  "reservation_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reservation_id",
+                  "payment_authorization_id",
+                  "decision_id"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "manual_review",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "rejected",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "OrderItem": {
+            "properties": {
+              "item_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "item_id",
+              "quantity"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "payment_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "request": {
+            "$ref": "#/$defs/OrderAuthorizationRequest"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "reservation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OrderAuthorizationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request",
+          "request_digest",
+          "replayed"
+        ],
+        "title": "WorkflowState",
+        "type": "object"
+      }
+    },
+    {
+      "id": "a03c6b15-16f9-43fb-b818-9a631f557a59",
+      "kind": "Atom",
+      "label": "RecordDecision",
+      "description": "Atomically persist the decision and redacted audit; reconcile unknown commit outcomes",
+      "input_type": "WorkflowState",
+      "output_type": "WorkflowState",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1041
+      },
+      "position": {
+        "x": 1200.0,
+        "y": 0.0
+      },
+      "input_schema": {
+        "$defs": {
+          "Fixture": {
+            "enum": [
+              "normal",
+              "manual_review",
+              "policy_rejected",
+              "out_of_stock",
+              "payment_declined",
+              "decision_write_failure",
+              "ack_lost_after_commit"
+            ],
+            "type": "string"
+          },
+          "OrderAuthorizationRequest": {
+            "properties": {
+              "amount_minor": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "customer_id": {
+                "type": "string"
+              },
+              "fixture": {
+                "$ref": "#/$defs/Fixture",
+                "default": "normal"
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/OrderItem"
+                },
+                "type": "array"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "payment_reference": {
+                "description": "Non-secret token issued by the payment boundary. Raw payment data is forbidden.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "order_id",
+              "idempotency_key",
+              "customer_id",
+              "items",
+              "amount_minor",
+              "currency",
+              "payment_reference"
+            ],
+            "type": "object"
+          },
+          "OrderAuthorizationResult": {
+            "oneOf": [
+              {
+                "properties": {
+                  "decision_id": {
+                    "type": "string"
+                  },
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "approved",
+                    "type": "string"
+                  },
+                  "payment_authorization_id": {
+                    "type": "string"
+                  },
+                  "reservation_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reservation_id",
+                  "payment_authorization_id",
+                  "decision_id"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "manual_review",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "rejected",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "OrderItem": {
+            "properties": {
+              "item_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "item_id",
+              "quantity"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "payment_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "request": {
+            "$ref": "#/$defs/OrderAuthorizationRequest"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "reservation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OrderAuthorizationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request",
+          "request_digest",
+          "replayed"
+        ],
+        "title": "WorkflowState",
+        "type": "object"
+      }
+    },
+    {
+      "id": "e7118ef7-3bda-40c7-898a-173c0889f346",
+      "kind": "Atom",
+      "label": "CompleteAuthorization",
+      "description": "Return a terminal result only after the durable decision boundary",
+      "input_type": "WorkflowState",
+      "output_type": "OrderAuthorizationResult",
+      "resource_type": "OrderResources",
+      "metadata": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "label": "",
+        "description": null,
+        "inputs": [],
+        "outputs": []
+      },
+      "source_location": {
+        "file": "src\\domain.rs",
+        "line": 1042
+      },
+      "position": {
+        "x": 1440.0,
+        "y": 0.0
+      },
+      "input_schema": {
+        "$defs": {
+          "Fixture": {
+            "enum": [
+              "normal",
+              "manual_review",
+              "policy_rejected",
+              "out_of_stock",
+              "payment_declined",
+              "decision_write_failure",
+              "ack_lost_after_commit"
+            ],
+            "type": "string"
+          },
+          "OrderAuthorizationRequest": {
+            "properties": {
+              "amount_minor": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "customer_id": {
+                "type": "string"
+              },
+              "fixture": {
+                "$ref": "#/$defs/Fixture",
+                "default": "normal"
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "items": {
+                "items": {
+                  "$ref": "#/$defs/OrderItem"
+                },
+                "type": "array"
+              },
+              "order_id": {
+                "type": "string"
+              },
+              "payment_reference": {
+                "description": "Non-secret token issued by the payment boundary. Raw payment data is forbidden.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "order_id",
+              "idempotency_key",
+              "customer_id",
+              "items",
+              "amount_minor",
+              "currency",
+              "payment_reference"
+            ],
+            "type": "object"
+          },
+          "OrderAuthorizationResult": {
+            "oneOf": [
+              {
+                "properties": {
+                  "decision_id": {
+                    "type": "string"
+                  },
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "approved",
+                    "type": "string"
+                  },
+                  "payment_authorization_id": {
+                    "type": "string"
+                  },
+                  "reservation_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reservation_id",
+                  "payment_authorization_id",
+                  "decision_id"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "manual_review",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "order_id": {
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "const": "rejected",
+                    "type": "string"
+                  },
+                  "reason_codes": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "outcome",
+                  "order_id",
+                  "reason_codes"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "OrderItem": {
+            "properties": {
+              "item_id": {
+                "type": "string"
+              },
+              "quantity": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "item_id",
+              "quantity"
+            ],
+            "type": "object"
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "payment_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "request": {
+            "$ref": "#/$defs/OrderAuthorizationRequest"
+          },
+          "request_digest": {
+            "type": "string"
+          },
+          "reservation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/OrderAuthorizationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request",
+          "request_digest",
+          "replayed"
+        ],
+        "title": "WorkflowState",
+        "type": "object"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "0bc2e0bd-5d5d-4e52-9806-bfeeabe26a8d",
+      "to": "3a1b9ade-1022-4533-b14e-167e80e1df61",
+      "kind": "Linear",
+      "label": "Next"
+    },
+    {
+      "from": "3a1b9ade-1022-4533-b14e-167e80e1df61",
+      "to": "90027620-1b6f-444f-af7d-d24d49f8ddf9",
+      "kind": "Linear",
+      "label": "Next"
+    },
+    {
+      "from": "90027620-1b6f-444f-af7d-d24d49f8ddf9",
+      "to": "e56d35fe-9ac0-41fc-a57d-0c829c708277",
+      "kind": "Linear",
+      "label": "Next"
+    },
+    {
+      "from": "e56d35fe-9ac0-41fc-a57d-0c829c708277",
+      "to": "24e2369d-ae4b-4088-abe0-24481c66540a",
+      "kind": "Linear",
+      "label": "Next"
+    },
+    {
+      "from": "24e2369d-ae4b-4088-abe0-24481c66540a",
+      "to": "942af335-ca67-420e-805c-6f3bfd16118e",
+      "kind": "Linear",
+      "label": "Next"
+    },
+    {
+      "from": "942af335-ca67-420e-805c-6f3bfd16118e",
+      "to": "a03c6b15-16f9-43fb-b818-9a631f557a59",
+      "kind": "Linear",
+      "label": "Next"
+    },
+    {
+      "from": "a03c6b15-16f9-43fb-b818-9a631f557a59",
+      "to": "e7118ef7-3bda-40c7-898a-173c0889f346",
+      "kind": "Linear",
+      "label": "Next"
+    }
+  ]
+}

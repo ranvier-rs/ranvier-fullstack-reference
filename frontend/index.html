@@ -1,269 +1,207 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ranvier Fullstack Reference</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ranvier Order Authorization Reference</title>
   <style>
     :root {
-      --bg: #0f0f14;
-      --surface: #1a1a24;
-      --border: #2a2a3a;
-      --accent: #7c5cfc;
-      --accent-dim: #5a3fd6;
-      --text: #e4e4ec;
-      --text-dim: #8888a0;
-      --success: #34d399;
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color-scheme: dark;
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #8b7cf6;
+      --success: #3fb950;
+      --danger: #f85149;
     }
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { box-sizing: border-box; }
     body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
+      margin: 0;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      background: radial-gradient(circle at top, #171b34 0, var(--bg) 38rem);
+      color: var(--text);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
     }
-
-    header {
-      width: 100%;
-      padding: 1.5rem 2rem;
-      background: linear-gradient(135deg, var(--surface) 0%, #12121a 100%);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    header .logo {
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    header .badge {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
+    header, main, footer { width: min(900px, calc(100% - 2rem)); margin-inline: auto; }
+    header { padding: 3rem 0 1.5rem; }
+    h1 { margin: 0; font-size: clamp(1.8rem, 5vw, 3rem); letter-spacing: -.04em; }
+    header p, footer { color: var(--muted); }
+    .badge {
+      display: inline-block;
+      margin-bottom: .75rem;
+      padding: .2rem .6rem;
+      border: 1px solid color-mix(in srgb, var(--accent), transparent 55%);
       border-radius: 999px;
-      background: rgba(124, 92, 252, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(124, 92, 252, 0.3);
+      color: #c7c0ff;
+      background: color-mix(in srgb, var(--accent), transparent 88%);
+      font-size: .78rem;
+      font-weight: 700;
     }
-
-    main {
-      width: 100%;
-      max-width: 720px;
-      padding: 2rem;
-      flex: 1;
-    }
-
-    .status-card {
-      background: var(--surface);
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .card {
+      padding: 1.25rem;
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      transition: border-color 0.2s;
+      background: color-mix(in srgb, var(--surface), transparent 5%);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, .2);
     }
-    .status-card:hover { border-color: var(--accent); }
-    .status-card h2 {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.75rem;
-    }
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 1.1rem;
-      font-weight: 500;
-    }
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--success);
-      animation: pulse 2s ease-in-out infinite;
-    }
-    .status-dot.error { background: #f87171; animation: none; }
-    .status-dot.loading { background: #fbbf24; animation: pulse 0.8s ease-in-out infinite; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .notes-list {
-      list-style: none;
-    }
-    .notes-list li {
-      background: rgba(124, 92, 252, 0.05);
+    .card.full { grid-column: 1 / -1; }
+    h2 { margin: 0 0 1rem; font-size: 1rem; }
+    label { display: grid; gap: .35rem; color: var(--muted); font-size: .85rem; }
+    input, select, button {
+      width: 100%;
+      padding: .7rem .8rem;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
-      margin-bottom: 0.75rem;
-      transition: transform 0.15s, border-color 0.2s;
-    }
-    .notes-list li:hover {
-      transform: translateX(4px);
-      border-color: var(--accent-dim);
-    }
-    .notes-list li .note-title {
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-    .notes-list li .note-body {
-      font-size: 0.9rem;
-      color: var(--text-dim);
-    }
-
-    .create-form {
-      display: flex;
-      gap: 0.5rem;
-    }
-    .create-form input {
-      flex: 1;
-      padding: 0.6rem 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
+      border-radius: 7px;
       background: var(--bg);
       color: var(--text);
-      font-family: var(--font);
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.2s;
+      font: inherit;
     }
-    .create-form input:focus { border-color: var(--accent); }
-    .create-form button {
-      padding: 0.6rem 1.25rem;
+    button { margin-top: 1rem; border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .status { display: flex; align-items: center; gap: .6rem; }
+    .dot { width: .7rem; height: .7rem; border-radius: 50%; background: var(--muted); }
+    .dot.ok { background: var(--success); }
+    .dot.error { background: var(--danger); }
+    dl { display: grid; grid-template-columns: 1fr auto; gap: .4rem 1rem; margin: 0; }
+    dt { color: var(--muted); }
+    dd { margin: 0; font-variant-numeric: tabular-nums; }
+    pre {
+      min-height: 10rem;
+      margin: 0;
+      padding: 1rem;
+      overflow: auto;
       border-radius: 8px;
-      border: none;
-      background: var(--accent);
-      color: white;
-      font-weight: 600;
-      font-family: var(--font);
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: background 0.2s;
+      background: #090c10;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
-    .create-form button:hover { background: var(--accent-dim); }
-
-    footer {
-      width: 100%;
-      padding: 1rem 2rem;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      border-top: 1px solid var(--border);
-    }
-    footer a { color: var(--accent); text-decoration: none; }
+    footer { padding: 2rem 0 3rem; font-size: .8rem; }
+    @media (max-width: 650px) { .grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-
   <header>
-    <span class="logo">Ranvier</span>
-    <span class="badge">Fullstack Reference</span>
+    <span class="badge">M420 native HTTP reference</span>
+    <h1>Order authorization, as a typed decision workflow.</h1>
+    <p>Exercise approval, policy branches, failure compensation, idempotency, and lost-commit reconciliation through the public Ranvier HTTP boundary.</p>
   </header>
 
-  <main>
-    <!-- Health Status -->
-    <div class="status-card">
-      <h2>API Status</h2>
-      <div class="status-indicator">
-        <div id="statusDot" class="status-dot loading"></div>
-        <span id="statusText">Connecting…</span>
-      </div>
-    </div>
+  <main class="grid">
+    <section class="card" aria-labelledby="healthTitle">
+      <h2 id="healthTitle">Native service</h2>
+      <div class="status"><span id="healthDot" class="dot"></span><span id="healthText">Checking…</span></div>
+    </section>
 
-    <!-- Notes -->
-    <div class="status-card">
-      <h2>Notes</h2>
-      <ul id="notesList" class="notes-list">
-        <li><span class="note-body" style="color:var(--text-dim)">Loading…</span></li>
-      </ul>
-    </div>
+    <section class="card" aria-labelledby="evidenceTitle">
+      <h2 id="evidenceTitle">Redacted evidence</h2>
+      <dl>
+        <dt>Decisions</dt><dd id="decisionCount">—</dd>
+        <dt>Audit records</dt><dd id="auditCount">—</dd>
+        <dt>Side-effect events</dt><dd id="effectCount">—</dd>
+        <dt>Domain trace events</dt><dd id="traceCount">—</dd>
+      </dl>
+    </section>
 
-    <!-- Create -->
-    <div class="status-card">
-      <h2>Create Note (PostgreSQL)</h2>
-      <div class="create-form">
-        <input id="noteInput" type="text" placeholder="Enter a title…">
-        <button id="createBtn">Create</button>
+    <section class="card full" aria-labelledby="requestTitle">
+      <h2 id="requestTitle">Canonical scenario</h2>
+      <div class="grid">
+        <label>Order suffix
+          <input id="orderSuffix" value="demo-001" maxlength="80" pattern="[A-Za-z0-9_.-]+">
+        </label>
+        <label>Deterministic fixture
+          <select id="fixture">
+            <option value="normal">S1 — valid approval</option>
+            <option value="manual_review">S2 — manual review</option>
+            <option value="policy_rejected">S3 — policy rejection</option>
+            <option value="out_of_stock">S4 — out of stock</option>
+            <option value="payment_declined">S5 — payment declined</option>
+            <option value="decision_write_failure">S6 — durable write failure</option>
+            <option value="ack_lost_after_commit">S8 — commit ACK lost</option>
+          </select>
+        </label>
       </div>
-    </div>
+      <button id="authorize" type="button">Authorize order</button>
+    </section>
+
+    <section class="card full" aria-labelledby="resultTitle">
+      <h2 id="resultTitle">Typed terminal response</h2>
+      <pre id="result" aria-live="polite">Run a scenario to inspect its result or structured fault.</pre>
+    </section>
   </main>
 
-  <footer>
-    Ranvier v0.51.0 — <a href="https://ranvier.studio" target="_blank">ranvier.studio</a>
-  </footer>
+  <footer>Ranvier 0.51.0-m420.1 local candidate · maintainer-owned reference, not independent-adopter evidence.</footer>
 
   <script>
-    const API = '/api';
+    const byId = (id) => document.getElementById(id);
 
-    async function checkHealth() {
-      const dot = document.getElementById('statusDot');
-      const text = document.getElementById('statusText');
+    async function refreshHealth() {
       try {
-        const res = await fetch(`${API}/health`);
-        const data = await res.json();
-        dot.className = 'status-dot';
-        text.textContent = `Online — v${data.version}`;
+        const response = await fetch('/api/health');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const health = await response.json();
+        byId('healthDot').className = 'dot ok';
+        byId('healthText').textContent = `${health.service} · ${health.ranvier_candidate}`;
       } catch {
-        dot.className = 'status-dot error';
-        text.textContent = 'Offline — cannot reach API';
+        byId('healthDot').className = 'dot error';
+        byId('healthText').textContent = 'Service unavailable';
       }
     }
 
-    async function loadNotes() {
-      const list = document.getElementById('notesList');
+    async function refreshEvidence() {
       try {
-        const res = await fetch(`${API}/notes`);
-        const notes = await res.json();
-        list.innerHTML = notes.map(n =>
-          `<li>
-             <div class="note-title">#${n.id} ${n.title}</div>
-             <div class="note-body">${n.body}</div>
-           </li>`
-        ).join('');
+        const response = await fetch('/api/order-authorizations/evidence');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const evidence = await response.json();
+        byId('decisionCount').textContent = evidence.decisions.length;
+        byId('auditCount').textContent = evidence.audits.length;
+        byId('effectCount').textContent = evidence.side_effects.events.length;
+        byId('traceCount').textContent = evidence.traces.length;
       } catch {
-        list.innerHTML = '<li><span class="note-body" style="color:#f87171">Failed to load notes</span></li>';
+        for (const id of ['decisionCount', 'auditCount', 'effectCount', 'traceCount']) byId(id).textContent = 'error';
       }
     }
 
-    document.getElementById('createBtn').addEventListener('click', async () => {
-      const input = document.getElementById('noteInput');
-      const title = input.value.trim();
-      if (!title) return;
+    byId('authorize').addEventListener('click', async () => {
+      const button = byId('authorize');
+      const suffix = byId('orderSuffix').value.trim();
+      if (!/^[A-Za-z0-9_.-]+$/.test(suffix)) {
+        byId('result').textContent = 'Order suffix may contain only letters, numbers, dot, dash, and underscore.';
+        return;
+      }
+      const request = {
+        order_id: `order-${suffix}`,
+        idempotency_key: `idem-${suffix}`,
+        customer_id: 'customer-demo',
+        items: [{ item_id: 'sku-001', quantity: 2 }],
+        amount_minor: 12500,
+        currency: 'USD',
+        payment_reference: 'payment-token-demo',
+        fixture: byId('fixture').value
+      };
+      button.disabled = true;
+      byId('result').textContent = 'Executing typed workflow…';
       try {
-        const res = await fetch(`${API}/notes`, {
+        const response = await fetch('/api/order-authorizations', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, body: 'Created from the frontend' }),
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(request)
         });
-        const note = await res.json();
-        const list = document.getElementById('notesList');
-        list.innerHTML += `<li>
-          <div class="note-title">#${note.id} ${note.title}</div>
-          <div class="note-body">${note.body}</div>
-        </li>`;
-        input.value = '';
-      } catch (e) {
-        alert('Failed to create note: ' + e.message);
+        const body = await response.json();
+        byId('result').textContent = `HTTP ${response.status}\n${JSON.stringify(body, null, 2)}`;
+      } catch (error) {
+        byId('result').textContent = `Request failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        await refreshEvidence();
       }
     });
 
-    // Boot
-    checkHealth();
-    loadNotes();
-    setInterval(checkHealth, 10000);
+    refreshHealth();
+    refreshEvidence();
   </script>
 </body>
 </html>

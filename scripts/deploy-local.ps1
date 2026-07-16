@@ -13,7 +13,8 @@ Write-Host ""
 $composeCmd = if (Get-Command "docker-compose" -ErrorAction SilentlyContinue) { "docker-compose" }
               elseif (Get-Command "podman-compose" -ErrorAction SilentlyContinue) { "podman-compose" }
               elseif (Get-Command "docker" -ErrorAction SilentlyContinue) { "docker compose" }
-              else { throw "Neither docker-compose nor podman-compose found" }
+              elseif (Get-Command "podman" -ErrorAction SilentlyContinue) { "podman compose" }
+              else { throw "No supported Docker or Podman Compose command found" }
 
 Write-Host "[INFO] Using: $composeCmd" -ForegroundColor Green
 Write-Host "[INFO] Compose file: $composeFile"
@@ -31,6 +32,8 @@ if (-not (Test-Path $envFile)) {
 Write-Host "[INFO] Starting services..." -ForegroundColor Cyan
 if ($composeCmd -eq "docker compose") {
     docker compose -f $composeFile up --build -d
+} elseif ($composeCmd -eq "podman compose") {
+    podman compose -f $composeFile up --build -d
 } else {
     & $composeCmd -f $composeFile up --build -d
 }
@@ -38,5 +41,5 @@ if ($composeCmd -eq "docker compose") {
 Write-Host ""
 Write-Host "[OK] Services started!" -ForegroundColor Green
 Write-Host "  Frontend:  http://localhost:8080"
-Write-Host "  API:       http://localhost:8080/api/health"
+Write-Host "  API:       http://localhost:8080/api/order-authorizations"
 Write-Host "  DB:        localhost:5432 (ranvier/ranvierpass)"

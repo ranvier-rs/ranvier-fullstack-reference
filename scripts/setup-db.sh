@@ -7,7 +7,7 @@ echo "╔═══════════════════════�
 echo "║  Ranvier DB Setup                    ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
-echo "[INFO] DATABASE_URL: $DATABASE_URL"
+echo "[INFO] Using the configured PostgreSQL connection (value redacted)."
 echo ""
 
 if ! command -v psql &>/dev/null; then
@@ -17,17 +17,21 @@ fi
 
 echo "[INFO] Running schema bootstrap via psql…"
 psql "$DATABASE_URL" <<'SQL'
-CREATE TABLE IF NOT EXISTS notes (
-    id    SERIAL PRIMARY KEY,
-    title VARCHAR NOT NULL,
-    body  TEXT    NOT NULL
+CREATE TABLE IF NOT EXISTS order_authorization_decisions (
+    decision_id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    request_digest TEXT NOT NULL,
+    result JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-INSERT INTO notes (title, body) VALUES
-    ('Welcome',          'Ranvier fullstack reference is running!'),
-    ('Architecture',     'Reverse proxy → SPA + /api → Ranvier backend'),
-    ('v0.10.0 Released', 'All gates passed. Typed Decision Engine is stable.')
-ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS order_authorization_audit (
+    audit_id BIGSERIAL PRIMARY KEY,
+    decision_id TEXT NOT NULL UNIQUE REFERENCES order_authorization_decisions(decision_id),
+    event JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 SQL
 
 echo ""
-echo "[OK] Schema ready and seed data inserted."
+echo "[OK] Order decision and audit schema ready."

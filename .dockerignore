@@ -1,0 +1,23 @@
+# Backend images use the repository root because candidate-registry is a
+# sibling of backend. Prune generated and unrelated trees explicitly so remote
+# Docker/Podman clients never walk or transfer local build artifacts.
+.git
+.git/**
+backend/target
+backend/target/**
+backend/tests
+backend/tests/**
+consumer-smoke
+consumer-smoke/**
+evidence
+evidence/**
+frontend
+frontend/**
+scripts
+scripts/**
+docker/compose
+docker/compose/**
+.env
+.env.*
+README.md
+CANDIDATE_REGISTRY.md

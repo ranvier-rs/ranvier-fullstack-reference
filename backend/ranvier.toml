@@ -1,0 +1,21 @@
+[runtime]
+profile = "production"
+
+[server]
+host = "0.0.0.0"
+port = 3000
+shutdown_timeout_secs = 30
+
+[logging]
+format = "json"
+level = "info"
+
+[tls]
+enabled = false
+
+[inspector]
+enabled = false
+
+[telemetry]
+service_name = "ranvier-order-authorization-native"
+sample_ratio = 0.1

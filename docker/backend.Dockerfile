@@ -22,8 +22,11 @@ RUN set -eu; \
 
 FROM docker.io/library/debian:bookworm-slim@sha256:63a496b5d3b99214b39f5ed70eb71a61e590a77979c79cbee4faf991f8c0783e
 
-COPY --from=builder /build/backend/target/release/ranvier-fullstack-backend /server
+WORKDIR /app
+COPY --from=builder /build/backend/target/release/ranvier-fullstack-backend /app/server
+COPY backend/ranvier.toml /app/ranvier.toml
 
 USER 65532:65532
 EXPOSE 3000
-ENTRYPOINT ["/server"]
+ENV RANVIER_CONFIG=/app/ranvier.toml
+ENTRYPOINT ["/app/server"]

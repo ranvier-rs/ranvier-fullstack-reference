@@ -1,14 +1,14 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16.14-alpine3.24@sha256:fd1e8d0274f13f5a03a2673a207b28e14823c2f2efc3ca4bb4197c8a9f841bdc
     environment:
-      POSTGRES_USER: ranvier
-      POSTGRES_PASSWORD: ranvierpass
-      POSTGRES_DB: ranvier_db
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ranvier -d ranvier_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -19,7 +19,7 @@ services:
       context: ../..
       dockerfile: docker/backend.Dockerfile
     environment:
-      DATABASE_URL: postgres://ranvier:ranvierpass@db:5432/ranvier_db
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       RUST_LOG: info
     depends_on:
       db:
@@ -28,8 +28,8 @@ services:
 
   proxy:
     build:
-      context: ../..
-      dockerfile: docker/frontend.Dockerfile
+      context: ../../frontend
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
     depends_on:

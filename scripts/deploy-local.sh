@@ -16,8 +16,10 @@ elif command -v podman-compose &>/dev/null; then
     COMPOSE_CMD="podman-compose"
 elif docker compose version &>/dev/null 2>&1; then
     COMPOSE_CMD="docker compose"
+elif podman compose version &>/dev/null 2>&1; then
+    COMPOSE_CMD="podman compose"
 else
-    echo "[ERROR] Neither docker-compose nor podman-compose found"
+    echo "[ERROR] No supported Docker or Podman Compose command found"
     exit 1
 fi
 
@@ -39,5 +41,5 @@ $COMPOSE_CMD -f "$COMPOSE_FILE" up --build -d
 echo ""
 echo "[OK] Services started!"
 echo "  Frontend:  http://localhost:8080"
-echo "  API:       http://localhost:8080/api/health"
+echo "  API:       http://localhost:8080/api/order-authorizations"
 echo "  DB:        localhost:5432 (ranvier/ranvierpass)"
