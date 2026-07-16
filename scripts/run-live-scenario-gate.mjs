@@ -45,7 +45,10 @@ async function authorize(input) {
 
 const health = await jsonFetch('/api/health');
 assert(health.status === 200, 'health must return 200');
-assert(['native', 'hybrid'].includes(adapter), 'adapter must be native or hybrid');
+assert(
+  ['native', 'hybrid', 'plain-axum-control'].includes(adapter),
+  'adapter must be native, hybrid, or plain-axum-control',
+);
 assert(
   health.body.service === `order-authorization-${adapter}`,
   `health reported ${health.body.service}; expected ${adapter}`,

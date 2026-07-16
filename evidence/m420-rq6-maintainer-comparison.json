@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0.0",
+  "captured_at": "2026-07-16T22:12:09.390Z",
+  "classification": "maintainer_dogfood_only",
+  "independent_adoption_claimed": false,
+  "timing_interpretation": "automated machine observations; not human adoption timing and not threshold evidence",
+  "dependency_boundary": {
+    "control_has_forbidden_source": false,
+    "ranvier_direct_dependencies": [
+      "async-trait",
+      "axum",
+      "http",
+      "ranvier-core",
+      "ranvier-guard",
+      "ranvier-http",
+      "ranvier-macros",
+      "ranvier-runtime",
+      "schemars",
+      "serde",
+      "serde_json",
+      "sha2",
+      "sqlx",
+      "tokio",
+      "tower",
+      "tracing",
+      "tracing-subscriber"
+    ],
+    "control_direct_dependencies": [
+      "async-trait",
+      "axum",
+      "http",
+      "serde",
+      "serde_json",
+      "sha2",
+      "sqlx",
+      "tokio",
+      "tower",
+      "tracing",
+      "tracing-subscriber"
+    ]
+  },
+  "sloc": {
+    "counting_rule": "non-blank Rust lines excluding lines whose trimmed form starts with //",
+    "ranvier_shared_domain_and_persistence": 1243,
+    "ranvier_shared_http_and_startup": 160,
+    "native_incremental_adapter": 116,
+    "hybrid_incremental_adapter": 163,
+    "native_and_hybrid_tests": 438,
+    "plain_axum_domain_and_persistence": 1019,
+    "plain_axum_http_and_startup": 201,
+    "plain_axum_tests": 207
+  },
+  "setup_commands_after_prerequisites": {
+    "plain_axum_control": 4,
+    "note": "network creation, image build, PostgreSQL start, and service start; repository clone and prerequisites excluded"
+  },
+  "runtime_observations_ms": {
+    "control_image_build": 76562,
+    "server_start_to_first_s1": {
+      "native": 2167,
+      "hybrid": 1934,
+      "plain_axum_control": 2068
+    },
+    "graceful_stop": {
+      "native": 888,
+      "hybrid": 898,
+      "plain_axum_control": 2294
+    },
+    "all_exit_codes": 0
+  },
+  "public_scenario_results": {
+    "plain_axum_control": "pass",
+    "decisions": 5,
+    "audits": 5,
+    "side_effect_events": 12,
+    "trace_events": 114
+  },
+  "failure_diagnosis": {
+    "scenario": "S6",
+    "source": "public HTTP response and redacted evidence endpoint",
+    "failed_step": "RecordDecision",
+    "original_fault": "decision_write_failed",
+    "compensations": [
+      "void_payment",
+      "release_inventory"
+    ],
+    "support_interventions": 0,
+    "interpretation": "machine-readable diagnosis proof; no human elapsed-time claim"
+  },
+  "visibility": {
+    "ranvier_schematic_nodes": 8,
+    "ranvier_schematic_edges": 7,
+    "ranvier_runtime_trace_steps": 7,
+    "plain_axum_generated_graph": false,
+    "plain_axum_runtime_trace_steps": 7,
+    "plain_axum_branch_map_source": "procedural source and hand-maintained trace labels"
+  },
+  "change_safety": {
+    "native_to_hybrid_domain_source_changes": 0,
+    "plain_axum_to_ranvier_domain_rewrite_required": true,
+    "note": "native and hybrid share one typed Axon; the independent control intentionally owns a separate procedural implementation"
+  },
+  "hashes": {
+    "control_lock_sha256": "68c0d4931ad626d474dde77b625d8e16ac2be8c92ed3bafe33681d4550f85cda",
+    "control_manifest_sha256": "c799d76ef459eeb516d72baf6cc5fcb19b6255e063050985c23b0dc5fd162137",
+    "control_live_evidence_sha256": "749528d4ffeb5771c206ba5806eaf7f9e7eddf4314c130b79078378d82c10899",
+    "ranvier_schematic_sha256": "7d445f97fef4c17bf6799b8c9f49cf43b70ea40cc1c52e3820d40dcd7561a899"
+  },
+  "platform_notes": {
+    "linux_rust_1_93": "locked check and all 3 tests passed",
+    "windows": "locked check and warnings-denied Clippy passed; newly linked integration-test executable was denied by host policy (os error 5)"
+  }
+}

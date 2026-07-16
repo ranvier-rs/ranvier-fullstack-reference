@@ -1,0 +1,810 @@
+{
+  "schema_version": "1.0.0",
+  "excluded_metadata": [
+    "adapter",
+    "base_url",
+    "prefix",
+    "health",
+    "generated identifiers"
+  ],
+  "ranvier": {
+    "path": "evidence/hybrid-live-scenarios.json",
+    "raw_sha256": "40b9329777b584a726b0128b91eebab4bef3e7cfa789bdc90cfab8b203c1bcae",
+    "structural_sha256": "6efe837f4feb1e6f7df22419a3f9c8b629564c0640a19b5f87363de35c8aca14"
+  },
+  "plain_axum_control": {
+    "path": "evidence/plain-axum-control-live-scenarios.json",
+    "raw_sha256": "749528d4ffeb5771c206ba5806eaf7f9e7eddf4314c130b79078378d82c10899",
+    "structural_sha256": "6efe837f4feb1e6f7df22419a3f9c8b629564c0640a19b5f87363de35c8aca14"
+  },
+  "canonical": {
+    "schema_version": "1.0.0",
+    "scenarios": {
+      "s1": {
+        "status": 200,
+        "envelope": "ok",
+        "outcome": "approved",
+        "reason_codes": []
+      },
+      "s2": {
+        "status": 200,
+        "envelope": "ok",
+        "outcome": "manual_review",
+        "reason_codes": [
+          "risk_review_required"
+        ]
+      },
+      "s3": {
+        "status": 200,
+        "envelope": "ok",
+        "outcome": "rejected",
+        "reason_codes": [
+          "policy_rejected"
+        ]
+      },
+      "s4": {
+        "status": 422,
+        "envelope": "fault",
+        "code": "inventory_out_of_stock",
+        "failed_step": "ReserveInventory",
+        "retryable": false,
+        "operator_action_required": false,
+        "compensations": []
+      },
+      "s5": {
+        "status": 422,
+        "envelope": "fault",
+        "code": "payment_declined",
+        "failed_step": "AuthorizePayment",
+        "retryable": false,
+        "operator_action_required": false,
+        "compensations": [
+          {
+            "action": "release_inventory",
+            "status": "applied"
+          }
+        ]
+      },
+      "s6": {
+        "status": 503,
+        "envelope": "fault",
+        "code": "decision_write_failed",
+        "failed_step": "RecordDecision",
+        "retryable": true,
+        "operator_action_required": false,
+        "compensations": [
+          {
+            "action": "void_payment",
+            "status": "applied"
+          },
+          {
+            "action": "release_inventory",
+            "status": "applied"
+          }
+        ]
+      },
+      "s7_first": {
+        "status": 200,
+        "envelope": "ok",
+        "outcome": "approved",
+        "reason_codes": []
+      },
+      "s7_retry": {
+        "status": 200,
+        "envelope": "ok",
+        "outcome": "approved",
+        "reason_codes": []
+      },
+      "s8": {
+        "status": 200,
+        "envelope": "ok",
+        "outcome": "approved",
+        "reason_codes": []
+      }
+    },
+    "decisions": [
+      {
+        "scenario": "s1",
+        "outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "scenario": "s2",
+        "outcome": "manual_review",
+        "reason_codes": [
+          "risk_review_required"
+        ]
+      },
+      {
+        "scenario": "s3",
+        "outcome": "rejected",
+        "reason_codes": [
+          "policy_rejected"
+        ]
+      },
+      {
+        "scenario": "s7",
+        "outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "scenario": "s8",
+        "outcome": "approved",
+        "reason_codes": []
+      }
+    ],
+    "audits": [
+      {
+        "scenario": "s1",
+        "event_type": "order_authorization_recorded",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "scenario": "s2",
+        "event_type": "order_authorization_recorded",
+        "terminal_outcome": "manual_review",
+        "reason_codes": [
+          "risk_review_required"
+        ]
+      },
+      {
+        "scenario": "s3",
+        "event_type": "order_authorization_recorded",
+        "terminal_outcome": "rejected",
+        "reason_codes": [
+          "policy_rejected"
+        ]
+      },
+      {
+        "scenario": "s7",
+        "event_type": "order_authorization_recorded",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      },
+      {
+        "scenario": "s8",
+        "event_type": "order_authorization_recorded",
+        "terminal_outcome": "approved",
+        "reason_codes": []
+      }
+    ],
+    "side_effect_events": [
+      {
+        "scenario": "s1",
+        "action": "inventory_reserved",
+        "status": "applied"
+      },
+      {
+        "scenario": "s1",
+        "action": "payment_authorized",
+        "status": "applied"
+      },
+      {
+        "scenario": "s5",
+        "action": "inventory_reserved",
+        "status": "applied"
+      },
+      {
+        "scenario": "s5",
+        "action": "inventory_released",
+        "status": "applied"
+      },
+      {
+        "scenario": "s6",
+        "action": "inventory_reserved",
+        "status": "applied"
+      },
+      {
+        "scenario": "s6",
+        "action": "payment_authorized",
+        "status": "applied"
+      },
+      {
+        "scenario": "s6",
+        "action": "payment_voided",
+        "status": "applied"
+      },
+      {
+        "scenario": "s6",
+        "action": "inventory_released",
+        "status": "applied"
+      },
+      {
+        "scenario": "s7",
+        "action": "inventory_reserved",
+        "status": "applied"
+      },
+      {
+        "scenario": "s7",
+        "action": "payment_authorized",
+        "status": "applied"
+      },
+      {
+        "scenario": "s8",
+        "action": "inventory_reserved",
+        "status": "applied"
+      },
+      {
+        "scenario": "s8",
+        "action": "payment_authorized",
+        "status": "applied"
+      }
+    ],
+    "trace_events": [
+      {
+        "scenario": "s1",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s1",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s1",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s1",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s1",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s1",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s1",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s1",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s1",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s1",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "scenario": "s1",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "scenario": "s1",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "scenario": "s1",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "scenario": "s1",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "scenario": "s2",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s2",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s2",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s2",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s2",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s2",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s2",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s2",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s2",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s2",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "scenario": "s2",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "scenario": "s2",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "scenario": "s2",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "scenario": "s2",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "scenario": "s3",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s3",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s3",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s3",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s3",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s3",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s3",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s3",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s3",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s3",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "scenario": "s3",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "scenario": "s3",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "scenario": "s3",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "scenario": "s3",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "scenario": "s4",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s4",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s4",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s4",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s4",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s4",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s4",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s4",
+        "step": "ReserveInventory",
+        "state": "fault"
+      },
+      {
+        "scenario": "s5",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s5",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s5",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s5",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s5",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s5",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s5",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s5",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s5",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s5",
+        "step": "AuthorizePayment",
+        "state": "fault"
+      },
+      {
+        "scenario": "s6",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s6",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s6",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s6",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s6",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s6",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s6",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s6",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s6",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s6",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "scenario": "s6",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "scenario": "s6",
+        "step": "RecordDecision",
+        "state": "fault"
+      },
+      {
+        "scenario": "s7",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "scenario": "s7",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "scenario": "s7",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      },
+      {
+        "scenario": "s8",
+        "step": "ValidateRequest",
+        "state": "entered"
+      },
+      {
+        "scenario": "s8",
+        "step": "ValidateRequest",
+        "state": "next"
+      },
+      {
+        "scenario": "s8",
+        "step": "ResolveIdempotency",
+        "state": "entered"
+      },
+      {
+        "scenario": "s8",
+        "step": "ResolveIdempotency",
+        "state": "next"
+      },
+      {
+        "scenario": "s8",
+        "step": "ScreenPolicy",
+        "state": "entered"
+      },
+      {
+        "scenario": "s8",
+        "step": "ScreenPolicy",
+        "state": "next"
+      },
+      {
+        "scenario": "s8",
+        "step": "ReserveInventory",
+        "state": "entered"
+      },
+      {
+        "scenario": "s8",
+        "step": "ReserveInventory",
+        "state": "next"
+      },
+      {
+        "scenario": "s8",
+        "step": "AuthorizePayment",
+        "state": "entered"
+      },
+      {
+        "scenario": "s8",
+        "step": "AuthorizePayment",
+        "state": "next"
+      },
+      {
+        "scenario": "s8",
+        "step": "RecordDecision",
+        "state": "entered"
+      },
+      {
+        "scenario": "s8",
+        "step": "RecordDecision",
+        "state": "next"
+      },
+      {
+        "scenario": "s8",
+        "step": "CompleteAuthorization",
+        "state": "entered"
+      },
+      {
+        "scenario": "s8",
+        "step": "CompleteAuthorization",
+        "state": "next"
+      }
+    ],
+    "trace_event_count": 114,
+    "result": "pass"
+  },
+  "result": "pass"
+}
