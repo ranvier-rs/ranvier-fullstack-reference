@@ -1,6 +1,7 @@
 # Ranvier Fullstack Reference
 
-A production-like reference architecture demonstrating **Ranvier v0.51.0** in a real full-stack deployment topology.
+A production-like reference architecture demonstrating the M419-inclusive
+**Ranvier `0.51.0-m420.1` candidate** in a real full-stack deployment topology.
 
 ## Feature Showcase
 
@@ -35,7 +36,10 @@ A production-like reference architecture demonstrating **Ranvier v0.51.0** in a 
 
 ```bash
 # 1. Clone this repo
-# 2. Deploy locally (requires Docker or Podman)
+# 2. Verify the backend directly (Node 24 + Rust 1.95)
+node scripts/candidate-cargo.mjs check --manifest-path backend/Cargo.toml --locked
+
+# 3. Deploy locally (requires Docker or Podman)
 pwsh scripts/deploy-local.ps1    # Windows
 bash scripts/deploy-local.sh     # Linux/macOS
 
@@ -69,5 +73,10 @@ bash scripts/deploy-local.sh     # Linux/macOS
 
 - **Reverse proxy pattern**: Nginx serves the static frontend and proxies `/api` to the Ranvier backend. `Ranvier::http()` is an **Ingress Builder**, not a web server.
 - **Separate containers**: Backend, frontend, and DB each run in their own container for clear deployment boundaries.
-- **Path dependencies**: The backend `Cargo.toml` uses `path = "../../ranvier/..."` for local workspace parity.
+- **Registry-first dependency mode**: The backend defaults to exact
+  `0.51.0-m420.1` packages in the committed candidate registry, so a clone does
+  not need a sibling Ranvier checkout. This local candidate is not crates.io.
+- **Explicit maintainer override**: `node scripts/run-local-source.mjs check`
+  creates a temporary backend copy with source paths. It never changes the
+  default manifest and is excluded from consumer evidence.
 - **Typed JSON serialization at boundary**: Transitions return domain structs (`Note`, `HealthResponse`). JSON serialization happens at the route level via `get_json_out` / `post_typed_json_out`, aligning with PHILOSOPHY.md §5 "Infrastructure as Boundary".

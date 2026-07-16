@@ -12,6 +12,7 @@ const registryRoot = realpathSync(path.resolve(process.env.RANVIER_CANDIDATE_REG
 const indexRoot = realpathSync(path.join(registryRoot, 'index'));
 const host = process.env.RANVIER_CANDIDATE_REGISTRY_HOST ?? '127.0.0.1';
 const port = Number.parseInt(process.env.RANVIER_CANDIDATE_REGISTRY_PORT ?? '43117', 10);
+const manifest = JSON.parse(readFileSync(path.join(registryRoot, 'MANIFEST.json'), 'utf8'));
 
 function send(response, status, body, contentType = 'text/plain; charset=utf-8') {
   const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body, 'utf8');
@@ -59,6 +60,14 @@ const server = http.createServer((request, response) => {
       dl: `http://${authority}/crates/{crate}/{version}/download`,
     })}\n`;
     send(response, 200, body, 'application/json');
+    return;
+  }
+  if (pathname === '/health.json') {
+    send(response, 200, `${JSON.stringify({
+      source_commit: manifest.source_commit,
+      candidate_version: manifest.candidate_version,
+      package_count: manifest.package_count,
+    })}\n`, 'application/json');
     return;
   }
   const relative = pathname.replace(/^\/+/, '');

@@ -1,15 +1,10 @@
 #!/usr/bin/env pwsh
 # build-all.ps1 — Build the Rust backend
 #
-# musl cross-compilation note:
-#   Direct Windows → musl cross-compile requires x86_64-linux-musl-gcc (not available natively).
-#   The production Docker image (docker/backend.Dockerfile) uses 'clux/muslrust' inside the builder
-#   stage to produce the fully-static binary. Run './scripts/deploy-local.ps1' to trigger that build.
-#
-#   For development iteration on Windows, the normal release build (non-musl) is used here.
+# The default build resolves exact packages from the committed candidate
+# registry. It never requires a sibling Ranvier checkout.
 
 $ErrorActionPreference = "Stop"
-$BackendDir = Join-Path $PSScriptRoot "..\backend"
 
 Write-Host "╔══════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║  Ranvier Fullstack — Build All       ║" -ForegroundColor Cyan
@@ -18,15 +13,13 @@ Write-Host ""
 
 # ── Backend (Rust, native release for local dev) ───────────
 Write-Host "[INFO] Building Rust backend (native release)…" -ForegroundColor Cyan
-Push-Location $BackendDir
-cargo build --release
-Pop-Location
+node (Join-Path $PSScriptRoot "candidate-cargo.mjs") build --manifest-path backend/Cargo.toml --locked --release
 Write-Host "[OK] Backend binary: backend/target/release/ranvier-fullstack-backend" -ForegroundColor Green
 Write-Host ""
 
-# ── musl via Docker ────────────────────────────────────────
-Write-Host "[INFO] For a musl static binary (prod), the Docker build handles this automatically." -ForegroundColor DarkGray
-Write-Host "       Run './scripts/deploy-local.ps1' to build the full stack with musl + scratch image."
+# ── Container build ─────────────────────────────────────────
+Write-Host "[INFO] The pinned container build uses the same committed candidate registry." -ForegroundColor DarkGray
+Write-Host "       Run './scripts/deploy-local.ps1' to build the full stack."
 Write-Host ""
 
 # ── Frontend ────────────────────────────────────────────────

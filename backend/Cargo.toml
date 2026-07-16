@@ -5,15 +5,16 @@ edition = "2024"
 rust-version = "1.93.0"
 
 [dependencies]
-# Ranvier local path deps for workspace parity
-ranvier-core    = { path = "../../ranvier/core" }
-ranvier-runtime = { path = "../../ranvier/runtime" }
-ranvier-http    = { path = "../../ranvier/http" }
-ranvier-macros  = { path = "../../ranvier/macros" }
-ranvier-guard   = { path = "../../ranvier/guard" }
+# Exact M419-inclusive candidate packages. The committed local sparse registry
+# is the default source until a byte-equivalent public prerelease is approved.
+ranvier-core    = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
+ranvier-runtime = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
+ranvier-http    = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
+ranvier-macros  = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
+ranvier-guard   = { version = "=0.51.0-m420.1", registry = "ranvier-m420" }
 
 # Database
-sqlx = { version = "0.8", features = ["runtime-tokio", "postgres"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "derive"] }
 
 # Async & Utilities
 tokio = { version = "1", features = ["full"] }
