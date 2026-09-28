@@ -7,22 +7,27 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
-  rmSync,
-  writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  createFreshConsumerRunRoot,
+  freshConsumerRunId,
+  freshConsumerTempPathLabel,
+  removeFreshConsumerRunRoot,
+  writeFreshConsumerEvidence,
+} from './fresh-consumer-run-files.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 const templateRoot = path.join(repoRoot, 'consumer-smoke');
 const registryRoot = path.join(repoRoot, 'candidate-registry');
-const targetRoot = path.join(repoRoot, 'target', 'm420-consumer');
 const evidenceRoot = path.join(repoRoot, 'target', 'm420-consumer-evidence');
 const runWindows = !process.argv.includes('--linux-only');
 const runLinux = !process.argv.includes('--windows-only');
+let runRoot;
+let targetRoot;
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -74,8 +79,8 @@ function run(command, args, options = {}) {
 }
 
 function copyConsumer(platform) {
-  const destination = path.join(tmpdir(), `ranvier-m420-consumer-${platform}`);
-  rmSync(destination, { recursive: true, force: true });
+  invariant(runRoot, 'fresh-consumer run root has not been initialized');
+  const destination = path.join(runRoot, `consumer-${platform}`);
   cpSync(templateRoot, destination, {
     recursive: true,
     filter: (source) => !source.includes(`${path.sep}target`) && !source.endsWith(`${path.sep}Cargo.lock`),
@@ -176,6 +181,7 @@ async function waitForPing(url, value) {
 
 async function windowsGate() {
   const consumer = copyConsumer('windows');
+  const consumerLabel = freshConsumerTempPathLabel(consumer);
   assertPortableManifests(consumer);
   const commands = [];
   const env = {
@@ -211,13 +217,13 @@ async function windowsGate() {
   invariant(request.body.echoed === 'windows' && request.body.source === 'registry-prerelease', 'unexpected Windows response');
   return {
     platform: 'windows-x64',
-    consumer_root: '$TEMP/ranvier-m420-consumer-windows',
+    consumer_root: consumerLabel,
     rustc: run('rustc', ['--version']).stdout,
     cargo: run('cargo', ['--version']).stdout,
     registry_source: 'sparse+http://127.0.0.1:43117/',
     packages,
     commands: commands.map(({ command, duration_ms }) => ({
-      command: command.replaceAll(consumer, '$TEMP/ranvier-m420-consumer-windows'),
+      command: command.replaceAll(consumer, consumerLabel),
       duration_ms,
     })),
     lock_sha256: sha256File(path.join(consumer, 'Cargo.lock')),
@@ -229,6 +235,7 @@ async function windowsGate() {
 
 function linuxGate() {
   const consumer = copyConsumer('linux');
+  const consumerLabel = freshConsumerTempPathLabel(consumer);
   assertPortableManifests(consumer);
   const mount = `${consumer.replaceAll('\\', '/')}:/consumer:Z`;
   const registryMount = `${registryRoot.replaceAll('\\', '/')}:/registry:ro,Z`;
@@ -290,7 +297,7 @@ function linuxGate() {
   invariant(existsSync(schematic), 'Linux schematic was not exported');
   return {
     platform: 'linux-x64-container',
-    consumer_root: '$TEMP/ranvier-m420-consumer-linux',
+    consumer_root: consumerLabel,
     container_image: 'docker.io/library/rust:1.95.0-bookworm',
     container_image_id: image.Id,
     container_repo_digests: image.RepoDigests ?? [],
@@ -299,7 +306,7 @@ function linuxGate() {
     registry_source: 'sparse+http://127.0.0.1:43117/',
     packages,
     command: result.command
-      .replaceAll(consumer.replaceAll('\\', '/'), '$TEMP/ranvier-m420-consumer-linux')
+      .replaceAll(consumer.replaceAll('\\', '/'), consumerLabel)
       .replaceAll(registryRoot.replaceAll('\\', '/'), '$REPO/candidate-registry'),
     duration_ms: result.duration_ms,
     lock_sha256: sha256File(path.join(consumer, 'Cargo.lock')),
@@ -313,9 +320,10 @@ function linuxGate() {
 }
 
 invariant(existsSync(path.join(registryRoot, 'MANIFEST.json')), 'candidate registry has not been generated');
-mkdirSync(targetRoot, { recursive: true });
-mkdirSync(evidenceRoot, { recursive: true });
 const registryManifest = JSON.parse(readFileSync(path.join(registryRoot, 'MANIFEST.json'), 'utf8'));
+runRoot = createFreshConsumerRunRoot();
+targetRoot = path.join(runRoot, 'target');
+mkdirSync(targetRoot, { recursive: true });
 const registryServer = spawn(process.execPath, [path.join(scriptDir, 'serve-candidate-registry.mjs')], {
   cwd: repoRoot,
   env: {
@@ -326,6 +334,7 @@ const registryServer = spawn(process.execPath, [path.join(scriptDir, 'serve-cand
   windowsHide: true,
 });
 
+let completed = false;
 try {
   await waitForRegistry();
   const observations = [];
@@ -340,6 +349,7 @@ try {
     claim_level: 'maintainer-fresh-consumer-candidate-gate',
     captured_at: new Date().toISOString(),
     source_commit: registryManifest.source_commit,
+    run_id: freshConsumerRunId(runRoot),
     candidate_version: registryManifest.candidate_version,
     package_count: registryManifest.package_count,
     prohibited_sources: ['path', 'git', '[patch]'],
@@ -350,11 +360,21 @@ try {
       'Compatibility across two releases and eight weeks is not claimed.',
     ],
   };
-  const output = path.join(evidenceRoot, `m420-rq2-${registryManifest.source_commit.slice(0, 7)}.json`);
-  writeFileSync(output, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
+  const output = writeFreshConsumerEvidence(
+    evidenceRoot,
+    registryManifest.source_commit,
+    runRoot,
+    evidence,
+  );
   console.log(`[fresh-consumer] passed ${observations.map((entry) => entry.platform).join(', ')}`);
   console.log(`[fresh-consumer] evidence ${path.relative(repoRoot, output).replaceAll('\\', '/')}`);
+  completed = true;
 } finally {
   registryServer.kill('SIGTERM');
   await waitForExit(registryServer);
+  if (completed) {
+    removeFreshConsumerRunRoot(runRoot);
+  } else {
+    console.error(`[fresh-consumer] retained failed run directory ${runRoot}`);
+  }
 }
