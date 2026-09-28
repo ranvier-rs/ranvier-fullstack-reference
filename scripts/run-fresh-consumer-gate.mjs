@@ -13,11 +13,12 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   createFreshConsumerRunRoot,
+  finishFreshConsumerRun,
   freshConsumerRunId,
   freshConsumerTempPathLabel,
-  removeFreshConsumerRunRoot,
   writeFreshConsumerEvidence,
 } from './fresh-consumer-run-files.mjs';
+import { assertLocalTcpPortsAvailable } from './fresh-consumer-port-guard.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
@@ -26,6 +27,7 @@ const registryRoot = path.join(repoRoot, 'candidate-registry');
 const evidenceRoot = path.join(repoRoot, 'target', 'm420-consumer-evidence');
 const runWindows = !process.argv.includes('--linux-only');
 const runLinux = !process.argv.includes('--windows-only');
+const keepFailedRun = process.argv.includes('--keep-failed-run');
 let runRoot;
 let targetRoot;
 
@@ -149,13 +151,34 @@ function waitForExit(child, timeoutMs = 5_000) {
   });
 }
 
-async function waitForRegistry() {
+async function waitForRegistry(registryServer, expectedIdentity) {
   for (let attempt = 0; attempt < 50; attempt += 1) {
+    invariant(
+      registryServer.exitCode === null && registryServer.signalCode === null,
+      `candidate registry exited before readiness (exit=${registryServer.exitCode}, signal=${registryServer.signalCode})`,
+    );
+    let response;
     try {
-      const response = await fetch('http://127.0.0.1:43117/config.json');
-      if (response.ok) return;
+      response = await fetch('http://127.0.0.1:43117/health.json');
     } catch {
       // Retry while the child initializes.
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      continue;
+    }
+    if (response.ok) {
+      const actualIdentity = await response.json();
+      invariant(
+        actualIdentity.source_commit === expectedIdentity.source_commit
+          && actualIdentity.candidate_version === expectedIdentity.candidate_version
+          && actualIdentity.package_count === expectedIdentity.package_count
+          && actualIdentity.instance === expectedIdentity.instance,
+        `candidate registry identity mismatch: expected ${JSON.stringify(expectedIdentity)}, got ${JSON.stringify(actualIdentity)}`,
+      );
+      invariant(
+        registryServer.exitCode === null && registryServer.signalCode === null,
+        'candidate registry exited during readiness check',
+      );
+      return;
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
@@ -186,6 +209,7 @@ async function windowsGate() {
   const commands = [];
   const env = {
     ...process.env,
+    CARGO_BUILD_JOBS: '1',
     CARGO_TARGET_DIR: path.join(targetRoot, 'windows'),
   };
   commands.push(run('cargo', ['generate-lockfile'], { cwd: consumer, env }));
@@ -220,6 +244,7 @@ async function windowsGate() {
     consumer_root: consumerLabel,
     rustc: run('rustc', ['--version']).stdout,
     cargo: run('cargo', ['--version']).stdout,
+    cargo_build_jobs: Number(env.CARGO_BUILD_JOBS),
     registry_source: 'sparse+http://127.0.0.1:43117/',
     packages,
     commands: commands.map(({ command, duration_ms }) => ({
@@ -241,6 +266,8 @@ function linuxGate() {
   const registryMount = `${registryRoot.replaceAll('\\', '/')}:/registry:ro,Z`;
   const script = [
     'set -euo pipefail',
+    'export CARGO_BUILD_JOBS=1',
+    'export CARGO_TARGET_DIR=/tmp/m420-consumer-target',
     'python3 -m http.server 43117 --bind 127.0.0.1 --directory /registry/index >/tmp/m420-index.log 2>&1 &',
     'index_pid=$!',
     'python3 -m http.server 43119 --bind 127.0.0.1 --directory /registry/crates >/tmp/m420-crates.log 2>&1 &',
@@ -253,7 +280,7 @@ function linuxGate() {
     'cargo test --locked',
     'cargo run --locked -- --schematic --schematic-output /consumer/m420-smoke-schematic.json',
     'cargo build --locked',
-    'M420_SMOKE_BIND=127.0.0.1:43118 target/debug/ranvier-m420-consumer-smoke >/tmp/m420-server.log 2>&1 &',
+    'M420_SMOKE_BIND=127.0.0.1:43118 "$CARGO_TARGET_DIR/debug/ranvier-m420-consumer-smoke" >/tmp/m420-server.log 2>&1 &',
     'server_pid=$!',
     'response=""',
     'for attempt in $(seq 1 60); do',
@@ -301,8 +328,10 @@ function linuxGate() {
     container_image: 'docker.io/library/rust:1.95.0-bookworm',
     container_image_id: image.Id,
     container_repo_digests: image.RepoDigests ?? [],
+    container_target_dir: '/tmp/m420-consumer-target',
     rustc: `rustc ${rustcMatch[1]}`,
     cargo: `cargo ${cargoMatch[1]}`,
+    cargo_build_jobs: 1,
     registry_source: 'sparse+http://127.0.0.1:43117/',
     packages,
     command: result.command
@@ -321,6 +350,12 @@ function linuxGate() {
 
 invariant(existsSync(path.join(registryRoot, 'MANIFEST.json')), 'candidate registry has not been generated');
 const registryManifest = JSON.parse(readFileSync(path.join(registryRoot, 'MANIFEST.json'), 'utf8'));
+const hostBindings = [{
+  host: runLinux ? '0.0.0.0' : '127.0.0.1',
+  port: 43117,
+}];
+if (runWindows) hostBindings.push({ host: '127.0.0.1', port: 43118 });
+await assertLocalTcpPortsAvailable(hostBindings);
 runRoot = createFreshConsumerRunRoot();
 targetRoot = path.join(runRoot, 'target');
 mkdirSync(targetRoot, { recursive: true });
@@ -328,6 +363,7 @@ const registryServer = spawn(process.execPath, [path.join(scriptDir, 'serve-cand
   cwd: repoRoot,
   env: {
     ...process.env,
+    RANVIER_CANDIDATE_REGISTRY_INSTANCE: freshConsumerRunId(runRoot),
     RANVIER_CANDIDATE_REGISTRY_HOST: runLinux ? '0.0.0.0' : '127.0.0.1',
   },
   stdio: ['ignore', 'ignore', 'inherit'],
@@ -336,7 +372,12 @@ const registryServer = spawn(process.execPath, [path.join(scriptDir, 'serve-cand
 
 let completed = false;
 try {
-  await waitForRegistry();
+  await waitForRegistry(registryServer, {
+    source_commit: registryManifest.source_commit,
+    candidate_version: registryManifest.candidate_version,
+    package_count: registryManifest.package_count,
+    instance: freshConsumerRunId(runRoot),
+  });
   const observations = [];
   if (runWindows) observations.push(await windowsGate());
   if (runLinux) observations.push(linuxGate());
@@ -373,8 +414,15 @@ try {
   registryServer.kill('SIGTERM');
   await waitForExit(registryServer);
   if (completed) {
-    removeFreshConsumerRunRoot(runRoot);
-  } else {
+    finishFreshConsumerRun(runRoot, { completed, keepFailed: keepFailedRun });
+  } else if (keepFailedRun) {
     console.error(`[fresh-consumer] retained failed run directory ${runRoot}`);
+  } else {
+    try {
+      finishFreshConsumerRun(runRoot, { completed, keepFailed: keepFailedRun });
+    } catch (cleanupError) {
+      console.error(`[fresh-consumer] failed-run cleanup failed: ${cleanupError.message}`);
+      console.error(`[fresh-consumer] retained failed run directory ${runRoot}`);
+    }
   }
 }

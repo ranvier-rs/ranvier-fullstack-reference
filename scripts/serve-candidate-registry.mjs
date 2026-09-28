@@ -67,6 +67,9 @@ const server = http.createServer((request, response) => {
       source_commit: manifest.source_commit,
       candidate_version: manifest.candidate_version,
       package_count: manifest.package_count,
+      ...(process.env.RANVIER_CANDIDATE_REGISTRY_INSTANCE
+        ? { instance: process.env.RANVIER_CANDIDATE_REGISTRY_INSTANCE }
+        : {}),
     })}\n`, 'application/json');
     return;
   }

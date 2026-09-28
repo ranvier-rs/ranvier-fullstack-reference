@@ -21,11 +21,22 @@ the bytes downloaded from its registry with the approved release artifacts.
 
 ## Verify
 
-With Node 24, Rust 1.95, Podman, and the committed registry:
+With Node 24, host Rust 1.98 for Windows, Podman, and the pinned
+`rust:1.95.0-bookworm` image for Linux:
 
 ```text
 node scripts/run-fresh-consumer-gate.mjs
 ```
+
+Each invocation first rejects occupied host ports, then checks the registry's
+source commit, candidate version, package count, and per-run identity. Consumer
+and Cargo target files use a unique owned temporary directory; successful runs
+and failed runs are cleaned by default. Add `--keep-failed-run` only when the
+generated consumer and build output are needed for diagnosis. `--windows-only`
+and `--linux-only` select one platform. Cargo builds use one job to bound memory;
+the Linux target directory stays inside the disposable container to avoid large
+compiler writes through the Windows bind mount. Evidence filenames include the
+run ID and use exclusive creation, so a previous result is never overwritten.
 
 To inspect the registry manually, start
 `node scripts/serve-candidate-registry.mjs` and use the exact dependencies in

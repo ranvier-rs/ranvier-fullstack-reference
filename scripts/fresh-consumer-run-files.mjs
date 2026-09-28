@@ -96,3 +96,9 @@ export function removeFreshConsumerRunRoot(runRoot, tempRoot = tmpdir()) {
   }
   rmSync(resolvedRunRoot, { recursive: true, force: false });
 }
+
+export function finishFreshConsumerRun(runRoot, { completed, keepFailed, tempRoot = tmpdir() }) {
+  if (!completed && keepFailed) return false;
+  removeFreshConsumerRunRoot(runRoot, tempRoot);
+  return true;
+}

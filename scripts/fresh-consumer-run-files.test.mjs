@@ -13,6 +13,7 @@ import test from 'node:test';
 import {
   createFreshConsumerRunRoot,
   freshConsumerEvidencePath,
+  finishFreshConsumerRun,
   freshConsumerRunId,
   freshConsumerTempPathLabel,
   removeFreshConsumerRunRoot,
@@ -117,6 +118,36 @@ test('run cleanup rejects paths without fresh-consumer ownership and containment
       () => freshConsumerTempPathLabel(path.resolve(tmpdir(), '..', 'outside-run')),
       /inside its temporary run root/,
     );
+  } finally {
+    rmSync(testRoot, { recursive: true, force: false });
+  }
+});
+
+test('failed runs are cleaned by default and retained only when requested', () => {
+  const testRoot = mkdtempSync(path.join(tmpdir(), 'ranvier-m420-consumer-failure-cleanup-test-'));
+  const cleanedRun = createFreshConsumerRunRoot(testRoot);
+  const retainedRun = createFreshConsumerRunRoot(testRoot);
+
+  try {
+    assert.equal(
+      finishFreshConsumerRun(cleanedRun, {
+        completed: false,
+        keepFailed: false,
+        tempRoot: testRoot,
+      }),
+      true,
+    );
+    assert.ok(!existsSync(cleanedRun));
+    assert.equal(
+      finishFreshConsumerRun(retainedRun, {
+        completed: false,
+        keepFailed: true,
+        tempRoot: testRoot,
+      }),
+      false,
+    );
+    assert.ok(existsSync(retainedRun));
+    removeFreshConsumerRunRoot(retainedRun, testRoot);
   } finally {
     rmSync(testRoot, { recursive: true, force: false });
   }
