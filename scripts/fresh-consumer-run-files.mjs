@@ -54,7 +54,21 @@ export function freshConsumerEvidencePath(evidenceRoot, sourceCommit, runRoot) {
   );
 }
 
+export function assertFreshConsumerEvidenceOutsideRunRoot(evidenceRoot, runRoot) {
+  const resolvedRunRoot = path.resolve(runRoot);
+  const resolvedEvidenceRoot = path.resolve(evidenceRoot);
+  const relative = path.relative(resolvedRunRoot, resolvedEvidenceRoot);
+  const isInsideRunRoot = relative.length === 0
+    || (relative !== '..'
+      && !relative.startsWith(`..${path.sep}`)
+      && !path.isAbsolute(relative));
+  if (isInsideRunRoot) {
+    throw new Error('fresh-consumer evidence root must remain outside the temporary run root');
+  }
+}
+
 export function writeFreshConsumerEvidence(evidenceRoot, sourceCommit, runRoot, evidence) {
+  assertFreshConsumerEvidenceOutsideRunRoot(evidenceRoot, runRoot);
   mkdirSync(evidenceRoot, { recursive: true });
   const output = freshConsumerEvidencePath(evidenceRoot, sourceCommit, runRoot);
   writeFileSync(output, `${JSON.stringify(evidence, null, 2)}\n`, {

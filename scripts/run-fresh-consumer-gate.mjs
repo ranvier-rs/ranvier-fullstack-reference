@@ -12,6 +12,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
+  assertFreshConsumerEvidenceOutsideRunRoot,
   createFreshConsumerRunRoot,
   finishFreshConsumerRun,
   freshConsumerRunId,
@@ -357,29 +358,31 @@ const hostBindings = [{
 }];
 if (runWindows) hostBindings.push({ host: '127.0.0.1', port: 43118 });
 await assertLocalTcpPortsAvailable(hostBindings);
-runRoot = createFreshConsumerRunRoot();
-targetRoot = path.join(runRoot, 'target');
-mkdirSync(targetRoot, { recursive: true });
-console.log(`[fresh-consumer] temporary root ${path.dirname(runRoot)}`);
-console.log(`[fresh-consumer] run root ${runRoot}`);
-console.log(`[fresh-consumer] Cargo home ${process.env.CARGO_HOME ?? '(platform default)'}`);
-if (runWindows) {
-  console.log(`[fresh-consumer] Windows Cargo target ${path.join(targetRoot, 'windows')}`);
-}
-console.log(`[fresh-consumer] evidence root ${evidenceRoot}`);
-const registryServer = spawn(process.execPath, [path.join(scriptDir, 'serve-candidate-registry.mjs')], {
-  cwd: repoRoot,
-  env: {
-    ...process.env,
-    RANVIER_CANDIDATE_REGISTRY_INSTANCE: freshConsumerRunId(runRoot),
-    RANVIER_CANDIDATE_REGISTRY_HOST: runLinux ? '0.0.0.0' : '127.0.0.1',
-  },
-  stdio: ['ignore', 'ignore', 'inherit'],
-  windowsHide: true,
-});
-
 let completed = false;
+let registryServer;
 try {
+  runRoot = createFreshConsumerRunRoot();
+  assertFreshConsumerEvidenceOutsideRunRoot(evidenceRoot, runRoot);
+  targetRoot = path.join(runRoot, 'target');
+  mkdirSync(targetRoot, { recursive: true });
+  console.log(`[fresh-consumer] temporary root ${path.dirname(runRoot)}`);
+  console.log(`[fresh-consumer] run root ${runRoot}`);
+  console.log(`[fresh-consumer] Cargo home ${process.env.CARGO_HOME ?? '(platform default)'}`);
+  if (runWindows) {
+    console.log(`[fresh-consumer] Windows Cargo target ${path.join(targetRoot, 'windows')}`);
+  }
+  console.log(`[fresh-consumer] evidence root ${evidenceRoot}`);
+  registryServer = spawn(process.execPath, [path.join(scriptDir, 'serve-candidate-registry.mjs')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      RANVIER_CANDIDATE_REGISTRY_INSTANCE: freshConsumerRunId(runRoot),
+      RANVIER_CANDIDATE_REGISTRY_HOST: runLinux ? '0.0.0.0' : '127.0.0.1',
+    },
+    stdio: ['ignore', 'ignore', 'inherit'],
+    windowsHide: true,
+  });
+
   await waitForRegistry(registryServer, {
     source_commit: registryManifest.source_commit,
     candidate_version: registryManifest.candidate_version,
@@ -419,18 +422,22 @@ try {
   console.log(`[fresh-consumer] evidence ${path.relative(repoRoot, output).replaceAll('\\', '/')}`);
   completed = true;
 } finally {
-  registryServer.kill('SIGTERM');
-  await waitForExit(registryServer);
-  if (completed) {
-    finishFreshConsumerRun(runRoot, { completed, keepFailed: keepFailedRun });
-  } else if (keepFailedRun) {
-    console.error(`[fresh-consumer] retained failed run directory ${runRoot}`);
-  } else {
-    try {
+  if (registryServer) {
+    registryServer.kill('SIGTERM');
+    await waitForExit(registryServer);
+  }
+  if (runRoot) {
+    if (completed) {
       finishFreshConsumerRun(runRoot, { completed, keepFailed: keepFailedRun });
-    } catch (cleanupError) {
-      console.error(`[fresh-consumer] failed-run cleanup failed: ${cleanupError.message}`);
+    } else if (keepFailedRun) {
       console.error(`[fresh-consumer] retained failed run directory ${runRoot}`);
+    } else {
+      try {
+        finishFreshConsumerRun(runRoot, { completed, keepFailed: keepFailedRun });
+      } catch (cleanupError) {
+        console.error(`[fresh-consumer] failed-run cleanup failed: ${cleanupError.message}`);
+        console.error(`[fresh-consumer] retained failed run directory ${runRoot}`);
+      }
     }
   }
 }

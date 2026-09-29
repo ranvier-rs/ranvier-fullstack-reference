@@ -92,6 +92,30 @@ test('fresh consumer evidence is unique and refuses to overwrite an existing fil
   }
 });
 
+test('evidence stays outside the temporary run directory that cleanup removes', () => {
+  const testRoot = mkdtempSync(path.join(tmpdir(), 'ranvier-m420-consumer-evidence-cleanup-test-'));
+  const runRoot = createFreshConsumerRunRoot(testRoot);
+  const nestedEvidenceRoot = path.join(runRoot, 'evidence');
+
+  try {
+    assert.throws(
+      () => writeFreshConsumerEvidence(nestedEvidenceRoot, sourceCommit, runRoot, { claim_level: 'test' }),
+      /must remain outside the temporary run root/,
+    );
+    assert.ok(!existsSync(nestedEvidenceRoot));
+
+    const output = writeFreshConsumerEvidence(testRoot, sourceCommit, runRoot, { claim_level: 'test' });
+    assert.equal(
+      finishFreshConsumerRun(runRoot, { completed: true, keepFailed: false, tempRoot: testRoot }),
+      true,
+    );
+    assert.ok(existsSync(output));
+    assert.equal(JSON.parse(readFileSync(output, 'utf8')).claim_level, 'test');
+  } finally {
+    rmSync(testRoot, { recursive: true, force: false });
+  }
+});
+
 test('run cleanup rejects paths without fresh-consumer ownership and containment', () => {
   const testRoot = mkdtempSync(path.join(tmpdir(), 'ranvier-m420-consumer-cleanup-test-'));
   const unrelatedPath = path.join(testRoot, 'keep-this');
