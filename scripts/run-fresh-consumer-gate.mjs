@@ -19,15 +19,16 @@ import {
   writeFreshConsumerEvidence,
 } from './fresh-consumer-run-files.mjs';
 import { assertLocalTcpPortsAvailable } from './fresh-consumer-port-guard.mjs';
+import { parseFreshConsumerGateOptions } from './fresh-consumer-gate-options.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 const templateRoot = path.join(repoRoot, 'consumer-smoke');
 const registryRoot = path.join(repoRoot, 'candidate-registry');
-const evidenceRoot = path.join(repoRoot, 'target', 'm420-consumer-evidence');
-const runWindows = !process.argv.includes('--linux-only');
-const runLinux = !process.argv.includes('--windows-only');
-const keepFailedRun = process.argv.includes('--keep-failed-run');
+const { evidenceRoot, runLinux, runWindows, keepFailedRun } = parseFreshConsumerGateOptions(
+  process.argv.slice(2),
+  repoRoot,
+);
 let runRoot;
 let targetRoot;
 
@@ -359,6 +360,13 @@ await assertLocalTcpPortsAvailable(hostBindings);
 runRoot = createFreshConsumerRunRoot();
 targetRoot = path.join(runRoot, 'target');
 mkdirSync(targetRoot, { recursive: true });
+console.log(`[fresh-consumer] temporary root ${path.dirname(runRoot)}`);
+console.log(`[fresh-consumer] run root ${runRoot}`);
+console.log(`[fresh-consumer] Cargo home ${process.env.CARGO_HOME ?? '(platform default)'}`);
+if (runWindows) {
+  console.log(`[fresh-consumer] Windows Cargo target ${path.join(targetRoot, 'windows')}`);
+}
+console.log(`[fresh-consumer] evidence root ${evidenceRoot}`);
 const registryServer = spawn(process.execPath, [path.join(scriptDir, 'serve-candidate-registry.mjs')], {
   cwd: repoRoot,
   env: {
