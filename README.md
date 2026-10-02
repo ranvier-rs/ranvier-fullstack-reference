@@ -131,6 +131,62 @@ The evidence response never contains raw payment data, credentials, email, or
 access tokens. The request's `payment_reference` is explicitly non-secret and
 is used only to compute the request digest; it is not persisted in evidence.
 
+## M429-RQ2 S1 Load Runner
+
+`scripts/measure-order-authorizations.mjs` captures bounded S1 request latency,
+HTTP outcomes, and Linux process memory using Node.js 24 with no added packages.
+It sends the fixed `normal` fixture and generates a unique `order_id` and
+`idempotency_key` for each warmup and measurement request:
+
+```bash
+node scripts/measure-order-authorizations.mjs \
+  --base-url http://127.0.0.1:8080 \
+  --adapter native \
+  --run-id pilot-20261003-01 \
+  --server-pid 1234 \
+  --concurrency 8 \
+  --warmup-seconds 10 \
+  --duration-seconds 30 \
+  --request-timeout-ms 5000 \
+  --output-dir evidence/benchmark-comparison
+```
+
+The runner accepts concurrency 1–256, warmup 0–3600 seconds, measurement
+duration 1–3600 seconds, and request timeout 1–120000 ms. All required values
+are checked before it creates a run directory or sends traffic. Use a fresh,
+unique `--run-id`; an existing output directory is never overwritten. The
+command's `1234` is an example only; replace it with the measured server's
+verified Linux PID before running. The
+runner requires Linux `/proc` and samples `VmRSS` and `VmHWM` at one-second
+intervals. It also checks `/proc/<pid>/stat` so a reused PID cannot silently
+switch the sampled process. Missing or invalid RSS samples, server exit, PID
+identity change, HTTP errors, timeouts, and malformed S1 responses invalidate
+the run.
+
+Each run writes `summary.json` and `samples.jsonl.gz` below
+`<output-dir>/<run-id>/`. Raw JSONL rows retain warmup/measurement phase,
+request ID, monotonic latency, HTTP status, S1 outcome, and a bounded error
+kind; response bodies and request payloads are not copied. Warmup rows remain
+available for diagnosis but are excluded from measurement counts, latency
+percentiles, and throughput. The reported sampled `VmRSS` peak is a one-second
+observation, not a guarantee that no higher transient value occurred. Linux
+`VmHWM` is process-lifetime high-water memory, so the report includes its value
+at the first sample, final value, and increase during this run. If writing the
+compressed sample stream applies backpressure, the runner marks the capture
+`FAIL` because the measurement client could constrain offered load.
+
+A runner `PASS` means its captured S1 requests succeeded and RSS collection
+completed. `comparison_eligibility` intentionally remains `NOT_ASSESSED`: this
+command does not run the S1–S8 correctness preflight, prove the database is a
+fresh isolated disposable instance, approve resource/time budget, or establish
+parity across adapter environments. Run it only after those M429-RQ2 gates are
+reviewed; a successful runner result alone is not a baseline, comparison, or
+product performance claim. The offline mock-server tests are run with:
+
+```bash
+node --test scripts/measure-order-authorizations.test.mjs
+```
+
 ## Layout
 
 ```text
