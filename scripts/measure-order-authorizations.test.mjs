@@ -437,6 +437,43 @@ test('RSS sample-writer backpressure invalidates the capture and is reported sep
   }
 });
 
+test('all sample writers are closed even if one close operation fails', async () => {
+  const mock = await startMockServer((_request, response) => {
+    respondJson(response, 200, { status: 'ok', result: { outcome: 'approved' } });
+  });
+  const outputDir = mkdtempSync(path.join(tmpdir(), 'm429-rq2-writer-close-failure-'));
+  let requestWriterClosed = false;
+  let rssWriterClosed = false;
+  try {
+    await assert.rejects(runBenchmark(makeOptions(outputDir, mock.baseUrl, {
+      runId: 'writer-close-failure',
+      concurrency: 1,
+      durationSeconds: 0.03,
+    }), {
+      readMemory: fakeMemoryReader(),
+      sampleIntervalMs: 10,
+      sampleWriterFactory: () => ({
+        async write() {},
+        async close() {
+          requestWriterClosed = true;
+          throw new Error('request writer close failed');
+        },
+        metrics: () => ({ backpressureCount: 0, backpressureWaitMs: 0 }),
+      }),
+      rssSampleWriterFactory: () => ({
+        async write() {},
+        async close() { rssWriterClosed = true; },
+        metrics: () => ({ backpressureCount: 0, backpressureWaitMs: 0 }),
+      }),
+    }), /request writer close failed/);
+    assert.equal(requestWriterClosed, true);
+    assert.equal(rssWriterClosed, true);
+  } finally {
+    await mock.close();
+    rmSync(outputDir, { recursive: true, force: false });
+  }
+});
+
 test('readProcessMemory distinguishes an absent source from an exited process', async () => {
   const procRoot = mkdtempSync(path.join(tmpdir(), 'm429-rq2-proc-reader-'));
   try {

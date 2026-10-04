@@ -521,8 +521,12 @@ export async function runBenchmark(options, dependencies = {}) {
         failRun(error);
       }
     }
-    await writer.close();
-    await rssWriter.close();
+    const writerCloseResults = await Promise.allSettled([
+      Promise.resolve().then(() => writer.close()),
+      Promise.resolve().then(() => rssWriter.close()),
+    ]);
+    const writerCloseFailure = writerCloseResults.find((result) => result.status === 'rejected');
+    if (writerCloseFailure?.status === 'rejected') throw writerCloseFailure.reason;
   }
 
   const totalCounts = {
