@@ -163,17 +163,20 @@ switch the sampled process. Missing or invalid RSS samples, server exit, PID
 identity change, HTTP errors, timeouts, and malformed S1 responses invalidate
 the run.
 
-Each run writes `summary.json` and `samples.jsonl.gz` below
-`<output-dir>/<run-id>/`. Raw JSONL rows retain warmup/measurement phase,
-request ID, monotonic latency, HTTP status, S1 outcome, and a bounded error
-kind; response bodies and request payloads are not copied. Warmup rows remain
-available for diagnosis but are excluded from measurement counts, latency
-percentiles, and throughput. The reported sampled `VmRSS` peak is a one-second
-observation, not a guarantee that no higher transient value occurred. Linux
-`VmHWM` is process-lifetime high-water memory, so the report includes its value
-at the first sample, final value, and increase during this run. If writing the
-compressed sample stream applies backpressure, the runner marks the capture
-`FAIL` because the measurement client could constrain offered load.
+Each run writes `summary.json`, request `samples.jsonl.gz`, and
+`rss-samples.jsonl.gz` below `<output-dir>/<run-id>/`; the summary schema is
+version `1.1.0`. Request JSONL rows retain
+warmup/measurement phase, request ID, monotonic latency, HTTP status, S1
+outcome, and a bounded error kind; response bodies and request payloads are
+not copied. RSS JSONL rows retain elapsed time, `VmRSS`, `VmHWM`, the observed
+process start time when available, and a final-sample marker. Warmup request
+rows remain available for diagnosis but are excluded from measurement counts,
+latency percentiles, and throughput. The reported sampled `VmRSS` peak is a
+one-second observation, not a guarantee that no higher transient value
+occurred. Linux `VmHWM` is process-lifetime high-water memory, so the report
+includes its value at the first sample, final value, and increase during this
+run. Backpressure on either compressed sample stream marks the capture
+invalid; the summary records request and RSS writer counters separately.
 
 A runner `PASS` means its captured S1 requests succeeded and RSS collection
 completed. `comparison_eligibility` intentionally remains `NOT_ASSESSED`: this

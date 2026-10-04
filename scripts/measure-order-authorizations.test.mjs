@@ -68,12 +68,25 @@ function readSamples(samplesPath) {
     .map((line) => JSON.parse(line));
 }
 
+function readRssSamples(samplesPath) {
+  return gunzipSync(readFileSync(samplesPath))
+    .toString('utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
 function fakeMemoryReader() {
   let calls = 0;
   return async () => {
     calls += 1;
     const vmrssBytes = 128 * 1024 + calls * 1024;
-    return { vmrssBytes, vmhwmBytes: vmrssBytes + 16 * 1024 };
+    return {
+      vmrssBytes,
+      vmhwmBytes: vmrssBytes + 16 * 1024,
+      processStartTime: '42',
+    };
   };
 }
 
@@ -157,11 +170,13 @@ test('S1 mock run records unique request IDs, excludes warmup from latency, and 
       sampleIntervalMs: 10,
     });
     const samples = readSamples(run.samplesPath);
+    const rssSamples = readRssSamples(run.rssSamplesPath);
     const warmup = samples.filter((sample) => sample.phase === 'warmup');
     const measured = samples.filter((sample) => sample.phase === 'measurement');
     const allIds = requests.map((request) => request.order_id);
 
     assert.equal(run.summary.runner_status, 'PASS');
+    assert.equal(run.summary.schema_version, '1.1.0');
     assert.equal(run.summary.comparison_eligibility, 'NOT_ASSESSED');
     assert.ok(warmup.length > 0);
     assert.ok(measured.length > 0);
@@ -178,6 +193,12 @@ test('S1 mock run records unique request IDs, excludes warmup from latency, and 
     assert.ok(run.summary.rss.sample_count >= 2);
     assert.equal(run.summary.rss.final_sample_present, true);
     assert.ok(run.summary.rss.process_vmhwm_increase_since_initial_bytes >= 0);
+    assert.equal(rssSamples.length, run.summary.rss.sample_count);
+    assert.equal(run.summary.artifacts.raw_rss_samples, 'rss-samples.jsonl.gz');
+    assert.equal(rssSamples.filter((sample) => sample.final).length, 1);
+    assert.equal(rssSamples.at(-1).final, true);
+    assert.ok(rssSamples.every((sample) => sample.vmrss_bytes > 0 && sample.vmhwm_bytes >= sample.vmrss_bytes));
+    assert.ok(rssSamples.every((sample) => sample.process_start_time === '42'));
   } finally {
     await mock.close();
     rmSync(outputDir, { recursive: true, force: false });
@@ -378,6 +399,37 @@ test('sample-writer backpressure invalidates the capture instead of claiming com
     });
     assert.equal(run.summary.runner_status, 'FAIL');
     assert.equal(run.summary.sample_writer.measurement_valid, false);
+    assert.ok(run.summary.errors.failure_codes.includes('sample_writer_backpressure'));
+  } finally {
+    await mock.close();
+    rmSync(outputDir, { recursive: true, force: false });
+  }
+});
+
+test('RSS sample-writer backpressure invalidates the capture and is reported separately', async () => {
+  const mock = await startMockServer((_request, response) => {
+    respondJson(response, 200, { status: 'ok', result: { outcome: 'approved' } });
+  });
+  const outputDir = mkdtempSync(path.join(tmpdir(), 'm429-rq2-rss-writer-backpressure-'));
+  try {
+    const run = await runBenchmark(makeOptions(outputDir, mock.baseUrl, {
+      runId: 'rss-writer-backpressure',
+      concurrency: 1,
+      durationSeconds: 0.06,
+    }), {
+      readMemory: fakeMemoryReader(),
+      sampleIntervalMs: 10,
+      rssSampleWriterFactory: () => ({
+        async write() {},
+        async close() {},
+        metrics: () => ({ backpressureCount: 1, backpressureWaitMs: 3 }),
+      }),
+    });
+    assert.equal(run.summary.runner_status, 'FAIL');
+    assert.equal(run.summary.sample_writer.measurement_valid, false);
+    assert.equal(run.summary.sample_writer.request_backpressure_count, 0);
+    assert.equal(run.summary.sample_writer.rss_backpressure_count, 1);
+    assert.equal(run.summary.sample_writer.backpressure_count, 1);
     assert.ok(run.summary.errors.failure_codes.includes('sample_writer_backpressure'));
   } finally {
     await mock.close();

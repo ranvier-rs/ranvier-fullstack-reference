@@ -34,7 +34,8 @@ const USAGE = `Usage: node scripts/measure-order-authorizations.mjs \\
 
 The runner requires Node 24 on Linux. It sends only the S1 normal fixture and
 samples VmRSS/VmHWM from /proc/<server-pid>/status every second. Each run writes
-summary.json and gzip-compressed JSONL samples under <output-dir>/<run-id>/.
+summary.json plus gzip-compressed request and RSS JSONL samples under
+<output-dir>/<run-id>/.
 `;
 
 function parseInteger(value, flag, minimum, maximum) {
@@ -384,8 +385,10 @@ export async function runBenchmark(options, dependencies = {}) {
   await mkdirAsync(options.outputDir, { recursive: true });
   await mkdirAsync(runDirectory);
   const samplesPath = path.join(runDirectory, 'samples.jsonl.gz');
+  const rssSamplesPath = path.join(runDirectory, 'rss-samples.jsonl.gz');
   const summaryPath = path.join(runDirectory, 'summary.json');
   const writer = (dependencies.sampleWriterFactory ?? createSampleWriter)(samplesPath);
+  const rssWriter = (dependencies.rssSampleWriterFactory ?? createSampleWriter)(rssSamplesPath);
 
   const startedAtUtc = new Date().toISOString();
   const runStarted = now();
@@ -421,12 +424,15 @@ export async function runBenchmark(options, dependencies = {}) {
       }
       serverProcessStartTime = sample.processStartTime;
     }
-    rssSamples.push({
+    const rssSample = {
       elapsed_ms: Math.max(0, now() - runStarted),
       vmrss_bytes: sample.vmrssBytes,
       vmhwm_bytes: sample.vmhwmBytes,
+      process_start_time: sample.processStartTime ?? null,
       final: isFinal,
-    });
+    };
+    rssSamples.push(rssSample);
+    await rssWriter.write(rssSample);
   };
 
   const samplerTask = (async () => {
@@ -516,6 +522,7 @@ export async function runBenchmark(options, dependencies = {}) {
       }
     }
     await writer.close();
+    await rssWriter.close();
   }
 
   const totalCounts = {
@@ -528,7 +535,12 @@ export async function runBenchmark(options, dependencies = {}) {
     : null;
   const initialRss = rssSamples[0] ?? null;
   const lastRss = rssSamples.at(-1) ?? null;
-  const sampleWriterMetrics = writer.metrics();
+  const requestSampleWriterMetrics = writer.metrics();
+  const rssSampleWriterMetrics = rssWriter.metrics();
+  const sampleWriterMetrics = {
+    backpressureCount: requestSampleWriterMetrics.backpressureCount + rssSampleWriterMetrics.backpressureCount,
+    backpressureWaitMs: requestSampleWriterMetrics.backpressureWaitMs + rssSampleWriterMetrics.backpressureWaitMs,
+  };
   const allRequestsSucceeded = totalCounts.total > 0 && totalCounts.failed === 0;
   const runnerPassed = allRequestsSucceeded
     && measurementCounts.total > 0
@@ -543,7 +555,7 @@ export async function runBenchmark(options, dependencies = {}) {
     ...(sampleWriterMetrics.backpressureCount > 0 ? ['sample_writer_backpressure'] : []),
   ])].sort();
   const summary = {
-    schema_version: '1.0.0',
+    schema_version: '1.1.0',
     run_id: options.runId,
     adapter: options.adapter,
     runner_status: runnerPassed ? 'PASS' : 'FAIL',
@@ -603,6 +615,10 @@ export async function runBenchmark(options, dependencies = {}) {
     sample_writer: {
       backpressure_count: sampleWriterMetrics.backpressureCount,
       backpressure_wait_ms: sampleWriterMetrics.backpressureWaitMs,
+      request_backpressure_count: requestSampleWriterMetrics.backpressureCount,
+      request_backpressure_wait_ms: requestSampleWriterMetrics.backpressureWaitMs,
+      rss_backpressure_count: rssSampleWriterMetrics.backpressureCount,
+      rss_backpressure_wait_ms: rssSampleWriterMetrics.backpressureWaitMs,
       measurement_valid: sampleWriterMetrics.backpressureCount === 0,
     },
     rss: {
@@ -618,11 +634,12 @@ export async function runBenchmark(options, dependencies = {}) {
     },
     artifacts: {
       raw_samples: 'samples.jsonl.gz',
+      raw_rss_samples: 'rss-samples.jsonl.gz',
       summary: 'summary.json',
     },
   };
   await writeFile(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, { flag: 'wx' });
-  return { summary, runDirectory, summaryPath, samplesPath };
+  return { summary, runDirectory, summaryPath, samplesPath, rssSamplesPath };
 }
 
 export async function main(args = process.argv.slice(2), dependencies = {}) {
